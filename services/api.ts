@@ -15,33 +15,35 @@ export const initializeAPI = (): AxiosInstance => {
     headers: API_CONFIG.headers,
   });
 
-  // Intercepteur pour ajouter le token d'authentification
+  // Interceptor ajoute le token d'authentification
   api.interceptors.request.use(async (config) => {
-    try {
-      const accessToken = await AsyncStorage.getItem('accessToken');
-      if (accessToken) {
-        config.headers.Authorization = `Bearer ${accessToken}`;
-      }
-    } catch (error) {
-      console.error('Error retrieving token:', error);
+
+    const accessToken = await AsyncStorage.getItem('accessToken');
+    if (accessToken) {
+      config.headers.Authorization = `Bearer ${accessToken}`;
     }
     return config;
   });
 
-  // Intercepteur pour gérer les erreurs d'authentification
+  // Interceptor pour gérer les erreurs d'authentification
   api.interceptors.response.use(
     (response) => response,
     async (error: AxiosError) => {
       const originalRequest = error.config as any;
 
       // Si erreur 401 et pas déjà tenté de refresh
-      if (error.response?.status === 401 && !originalRequest._retry) {
+      if (error.response?.status === 401 &&
+        !originalRequest._retry &&
+        !originalRequest.url.includes('/auth/login')) {
+
         originalRequest._retry = true;
 
         try {
           const refreshToken = await AsyncStorage.getItem('refreshToken');
+
           if (!refreshToken) {
-            throw new Error('No refresh token available');
+            return Promise.reject(error); // 👈 on laisse passer l'erreur
+            //throw new Error('No refresh token available');/
           }
 
           const response = await api!.post('/auth/refresh-token', {
@@ -56,11 +58,14 @@ export const initializeAPI = (): AxiosInstance => {
           // Réessayer la requête originale
           originalRequest.headers.Authorization = `Bearer ${accessToken}`;
           return api!(originalRequest);
+
         } catch (refreshError) {
           // Impossible de refresh, déconnecter l'utilisateur
           await AsyncStorage.removeItem('accessToken');
           await AsyncStorage.removeItem('refreshToken');
-          throw refreshError;
+
+          return Promise.reject(refreshError);
+          //throw refreshError;
         }
       }
 
@@ -77,5 +82,3 @@ export const getAPI = (): AxiosInstance => {
   }
   return api;
 };
-
-export default api;

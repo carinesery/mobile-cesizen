@@ -3,31 +3,83 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { authService } from '@/services';
 import { User } from '@/types';
 
+// 	Expo Secure Store suffit
+//React Native Keychain
+
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   loading: boolean;
+  error: string | null;
+  clearError: () => void;
 }
+
+// /////////// FAKE USER POUR TESTS //////////
+// interface FakeUser {
+//   email: 'admin@test.com',
+//   password: 'Admin@123',
+//   createdAt: '2024-06-01T12:00:00Z',
+//   updatedAt: null,
+//   id: 'jdvlbdsqj:fs',
+//   username: 'SuperAdmin',
+//   isActive: true,
+//   role: "ADMIN"
+// }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const clearError = () => setError(null);
 
   useEffect(() => {
-    // Vérifier si l'utilisateur est déjà connecté au démarrage de l'application
+    const checkAuth = async () => {
+      setLoading(true);
+      try {
+        const accessToken = await AsyncStorage.getItem("accessToken");
+        if (accessToken) {
+          // Optionnel : vérifier la validité du token côté API
+          const response = await authService.getProfile(); // un call pour récupérer le user
+          setUser(response.user);
+        }
+      } catch (err) {
+        console.log("Utilisateur non connecté ou token invalide", err);
+        setUser(null);
+        await AsyncStorage.removeItem("accessToken");
+        await AsyncStorage.removeItem("refreshToken");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkAuth();
   }, []);
 
   const login = async (email: string, password: string) => {
     setLoading(true);
     try {
+
       const data = await authService.login({ email, password });
       setUser(data.user);
       await AsyncStorage.setItem("accessToken", data.accessToken);
       await AsyncStorage.setItem("refreshToken", data.refreshToken);
-      // Penser à récupérer l'accesstoken et le refreshtoekn pour Asynctorage
+
+      console.log("Login réussi :", data);
+      // const fakeUser: FakeUser = {
+      //   email: 'admin@test.com',
+      //   password: 'Admin@123',
+      //   createdAt: '2024-06-01T12:00:00Z',
+      //   updatedAt: null,
+      //   id: 'jdvlbdsqj:fs',
+      //   username: 'SuperAdmin',
+      //   isActive: true,
+      //   role: "ADMIN"
+      // };
+      // setUser(fakeUser);
+
     } catch (error) {
       console.error('Login failed:', error);
       throw error;
@@ -40,7 +92,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       setLoading(true);
       await authService.logout();
-      
+
       // Suppression du refreshTokenet de l'accessToken de AsyncStorage
       await AsyncStorage.removeItem("accessToken");
       await AsyncStorage.removeItem("refreshToken");
@@ -56,7 +108,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, logout, loading, error, clearError }}>
       {children}
     </AuthContext.Provider>
   );

@@ -40,7 +40,7 @@
     "components",
     "constants",
     "types"
-, "anciensfichiers/(public)", "anciensfichiers/(protected)"  ],
+, "anciensfichiers/(public)", "anciensfichiers/(protected)", "schemas"  ],
   "exclude": [
     "node_modules",
     "src",

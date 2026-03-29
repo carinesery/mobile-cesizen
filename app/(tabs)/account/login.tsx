@@ -1,22 +1,119 @@
 // Affiche le formulaire de connextion et un lien vers mot de passe oublié
+import { useAuth } from "@/context/AuthContext";
 import { Redirect } from "expo-router";
-import { Text, View } from "react-native";
+import { useState, useEffect } from "react";
+import {
+    Text,
+    View, Button,
+    TextInput, Keyboard,
+    TouchableWithoutFeedback,
+    KeyboardAvoidingView,
+    Platform,
+    Alert,
+    StyleSheet,
+    ActivityIndicator,
+} from "react-native";
+import loginUserBodySchema from "../../../schemas/authSchema";
 
 export default function LoginScreen() {
 
+    const { login, user, loading, error, clearError } = useAuth();
+
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+
+    const handleLogin = async () => {
+        Keyboard.dismiss();
+        loading;
+        try {
+
+            // Validation Zod avant de login
+            const result = loginUserBodySchema.safeParse({ email, password });
+            if (!result.success) {
+                const messages = result.error.errors.map(e => e.message).join("\n");
+                Alert.alert("Erreur de formulaire", messages);
+                return;
+            }
+
+            const data = await login(email, password);
+
+            console.log("Login réussi :", data);
+
+            //   if (!data.response.ok) {
+            // setError(data.message); // 👈 ICI
+            // return;
+        // }
+    }
+        catch (error) {
+            console.log("Erreur login :", error);
+        } finally {
+            !loading;
+        }
+    };
+
+    useEffect(() => {
+        if (error) {
+            Alert.alert("Erreur", error, [{ text: "OK", onPress: clearError }]);
+        }
+    }, [error]);
+
+    if (loading) {
+        return (
+            <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+                <ActivityIndicator size="large" color="#007AFF" />
+            </View>
+        );
+    }
+
+    if (user && !loading) {
+        return <Redirect href="/account/profile" />
+    }
+
     // peut rediriger vers l'écran mot de passe oublié
     // ou vers l'écran d'inscription register.tsx
-        
-
     return (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-            <Text>Formulaire de login</Text>
-        </View>
-    )
-};
+        <KeyboardAvoidingView
+            style={{ flex: 1 }}
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+        >
 
 
+            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                <View style={styles.container}>
+                    <Text style={styles.title}>Connexion</Text>
 
+                    <TextInput
+                        placeholder="Email"
+                        value={email}
+                        onChangeText={setEmail}
+                        style={styles.input}
+                    />
+
+                    <TextInput
+                        placeholder="Mot de passe"
+                        value={password}
+                        onChangeText={setPassword}
+                        secureTextEntry
+                        style={styles.input}
+                    />
+
+                    <Button title="Se connecter" onPress={handleLogin} />
+                </View>
+            </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
+    );
+}
+
+const styles = StyleSheet.create({
+    container: { flex: 1, justifyContent: "center", padding: 20 },
+    title: { fontSize: 24, marginBottom: 20, textAlign: "center" },
+    input: {
+        borderWidth: 1,
+        padding: 10,
+        marginBottom: 15,
+        borderRadius: 5,
+    },
+});
 
 
 

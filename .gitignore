@@ -39,7 +39,11 @@ IMPLEMENTATION_SUMMARY.md
 GETTING_STARTED.md
 
 #Autres
-context/
+context/ArticlesContext.tsx
+context/MoodContext.tsx
+context/ProfileContext.tsx
+context/StatsContext.tsx
+context/index.tsx
 components/Button.tsx
 components/Container.tsx
 components/ErrorAlert.tsx
