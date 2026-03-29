@@ -1,3 +1,31 @@
+import { Redirect } from "expo-router";
+import { Text, View } from "react-native";
+
+export default function RegisterScreen() {
+
+   // Formulaire d'inscription
+        
+
+    return (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+            <Text>Inscription</Text>
+        </View>
+    )
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // import { useState } from 'react';
 // import { View, ScrollView, StyleSheet, Text } from 'react-native';
 // import { Link } from 'expo-router';
