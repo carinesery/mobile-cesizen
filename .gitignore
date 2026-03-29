@@ -1,0 +1,65 @@
+# dependencies
+node_modules/
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# environment
+.env
+.env.local
+.env.production.local
+.env.development.local
+
+# Expo
+.expo/
+dist/
+.expo-shared/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build
+build/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+
+#Documentation
+IMPLEMENTATION_SUMMARY.md
+GETTING_STARTED.md
+
+#Autres
+context/
+components/Button.tsx
+components/Container.tsx
+components/ErrorAlert.tsx
+components/index.tsx
+components/Loading.tsx
+components/TextInput.tsx
+types/auth.ts
+types/index.ts    
+types/mood.ts
+types/profile.ts
+types/stats.ts
+services/authService.ts
+services/moodService.ts
+services/profileService.ts
+services/statsService.ts
+constants/strings.ts
+
+
+
+
+
+
+

@@ -1,0 +1,50 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": [
+      "ES2020",
+      "dom",
+      "dom.iterable"
+    ],
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"],
+      "@screens/*": ["app/*"],
+      "@components/*": ["components/*"],
+      "@services/*": ["services/*"],
+      "@context/*": ["context/*"],
+      "@navigation/*": ["navigation/*"],
+      "@constants/*": ["constants/*"],
+      "@types/*": ["types/*"]
+    }
+  },
+  "include": [
+    "app",
+    "services",
+    "context",
+    "components",
+    "constants",
+    "types"
+, "anciensfichiers/(public)", "anciensfichiers/(protected)"  ],
+  "exclude": [
+    "node_modules",
+    "src",
+    "**/*.spec.ts"
+  ],
+  "extends": "expo/tsconfig.base"
+}
