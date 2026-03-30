@@ -7,8 +7,9 @@
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "splash": {
-      "resizeMode": "contain",
-      "backgroundColor": "#BE51FF"
+      "image": "./assets/screen-splash-cesizen.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#ffffff"
     },
     "ios": {
       "supportsTabletMode": true,

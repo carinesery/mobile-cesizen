@@ -44,7 +44,7 @@ export default function AccountScreen() {
               {/* Vers legal */}
             <TouchableOpacity
                 style={styles.button}
-                onPress={() => router.push("/account/session")}
+                onPress={() => router.push("/account/logout")}
             >
                 <Text style={styles.buttonText}>Session</Text>
             </TouchableOpacity>

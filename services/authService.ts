@@ -119,9 +119,12 @@ export const authService = {
    */
   async logout(): Promise<void> {
     try {
-      await api.post('/auth/logout');
-    } catch (error) {
-      console.error('Logout error:', error);
+      const refreshToken = await AsyncStorage.getItem('refreshToken');
+      await api.post('/auth/logout-mobile', { refreshToken });
+    } catch (error:any) {
+      const message = error.response?.data?.message || 'Erreur de connexion';
+
+      throw new Error(message);
     } finally {
       // Supprimer les tokens même si la requête échoue
       await AsyncStorage.removeItem('accessToken');

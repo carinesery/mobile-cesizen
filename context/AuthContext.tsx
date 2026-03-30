@@ -2,6 +2,7 @@ import React, { ReactNode, createContext, useContext, useState, useEffect, Child
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { authService } from '@/services';
 import { User } from '@/types';
+import { RefreshControl } from 'react-native';
 
 // 	Expo Secure Store suffit
 //React Native Keychain
@@ -10,7 +11,7 @@ interface AuthContextType {
   user: User | null;
   checkAuth: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;  // ✅ C'est async !
   loading: boolean;
   initializing: boolean;
 }
@@ -81,11 +82,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = async () => {
     try {
       setLoading(true);
-      await authService.logout();
 
-      // Suppression du refreshTokenet de l'accessToken de AsyncStorage
-      await AsyncStorage.removeItem("accessToken");
-      await AsyncStorage.removeItem("refreshToken");
+      const refreshToken = await AsyncStorage.getItem("refreshToken");
+      
+
+      console.log("RefreshToken :", refreshToken);
+      console.log("User avant logout :", user);
+      console.log("Appel de logout dans AuthContext");
+
+      await authService.logout();
 
       setUser(null);
 

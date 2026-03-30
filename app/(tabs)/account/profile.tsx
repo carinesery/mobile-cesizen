@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { View, Text, Image, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import { useAuth } from "@/context/AuthContext";
 import { router } from "expo-router/build/exports";
@@ -6,10 +6,17 @@ import { router } from "expo-router/build/exports";
 export default function ProfileScreen() {
   const { user } = useAuth();
 
+  // Redirection si pas logué
+  useEffect(() => {
+    if (!user) {
+      router.replace("/(auth)/login");
+    }
+  }, [user]);
+
   if (!user) {
     return (
       <View style={styles.loadingContainer}>
-        <Text>Chargement du profil...</Text>
+        <Text>Redirection...</Text>
       </View>
     );
   }

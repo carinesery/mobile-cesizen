@@ -46,7 +46,7 @@ export const profileService = {
   async updatePassword(data: UpdatePasswordRequest): Promise<void> {
     try {
       await api.patch('/profile/password', data);
-      
+
     } catch (error: any) {
       const message = error.response?.data?.message || 'Erreur de connexion';
 
@@ -59,7 +59,7 @@ export const profileService = {
    */
   async deleteAccount(): Promise<void> {
     try {
-      await api.delete('/profile');
+      await api.delete('/auth/logout');
     } catch (error: any) {
       const message = error.response?.data?.message || 'Erreur de connexion';
 
