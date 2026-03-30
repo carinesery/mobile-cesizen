@@ -9,7 +9,7 @@ export default function LogoutScreen() {
         try {
             await logout(); // ✅ Attendre que la déconnexion soit complète
             Alert.alert("Déconnexion", "Vous avez été déconnecté avec succès.");
-            router.replace("/account/register");
+            router.replace("/(auth)/login");  // ✅ Redirection vers login après logout
 
         } catch (error) {
             Alert.alert("Erreur", "Impossible de se déconnecter. Veuillez réessayer.");

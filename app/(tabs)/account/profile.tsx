@@ -1,22 +1,29 @@
-import React, { useEffect } from "react";
-import { View, Text, Image, StyleSheet, TouchableOpacity, Alert } from "react-native";
+import React from "react";
+import { View, Text, Image, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from "react-native";
 import { useAuth } from "@/context/AuthContext";
 import { router } from "expo-router/build/exports";
 
 export default function ProfileScreen() {
-  const { user } = useAuth();
+  const { user, initializing } = useAuth();
 
-  // Redirection si pas logué
-  useEffect(() => {
-    if (!user) {
-      router.replace("/(auth)/login");
-    }
-  }, [user]);
+  if (initializing) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#007AFF" />
+      </View>
+    );
+  }
 
   if (!user) {
     return (
       <View style={styles.loadingContainer}>
-        <Text>Redirection...</Text>
+        <Text>Vous devez être connecté pour voir votre profil.</Text>
+        <TouchableOpacity
+          style={[styles.button, { marginTop: 20 }]}
+          onPress={() => router.push("/(auth)/login")}
+        >
+          <Text style={styles.buttonText}>Se connecter</Text>
+        </TouchableOpacity>
       </View>
     );
   }

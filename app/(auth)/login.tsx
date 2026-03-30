@@ -1,6 +1,6 @@
 // Affiche le formulaire de connextion et un lien vers mot de passe oublié
 import { useAuth } from "@/context/AuthContext";
-import { router } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState, useEffect } from "react";
 import {
     Text,
@@ -14,10 +14,12 @@ import {
     StyleSheet,
     ActivityIndicator,
 } from "react-native";
-import PasswordInput from "../../../components/PasswordInput";
-import loginUserBodySchema from "../../../schemas/authSchema";
+import loginUserBodySchema from "../../schemas/authSchema";
+import PasswordInput from "@/components/PasswordInput";
 
 export default function LoginScreen() {
+    const { redirect } = useLocalSearchParams();
+    const router = useRouter();
 
     const { login, loading, user } = useAuth();
 
@@ -27,7 +29,12 @@ export default function LoginScreen() {
 
     useEffect(() => {
         if (user) {
-            router.replace("/account");
+            // Si un redirect est passé, y aller après login
+            if (redirect && typeof redirect === "string") {
+                router.replace(redirect);
+            } else {
+                router.replace("/(tabs)/account");
+            }
         }
     }, [user]);
 
@@ -87,16 +94,16 @@ export default function LoginScreen() {
 
                     <Button title="Se connecter" onPress={handleLogin} />
 
-                    {/* === Ici les liens === */}
+    
                     <View style={styles.linksContainer}>
-                        <TouchableOpacity onPress={() => router.push("/account/forgot-password")}>
+                        {/* <TouchableOpacity onPress={() => router.push("/account/forgot-password")}>
                             <Text style={styles.linkText}>Mot de passe oublié ?</Text>
-                        </TouchableOpacity>
+                        </TouchableOpacity> */}
 
-                        <TouchableOpacity onPress={() => router.push("/account/register")}>
+                        <TouchableOpacity onPress={() => router.push("/(auth)/register")}>
                             <Text style={styles.linkText}>Créer un compte</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={() => router.push("/account/confirm-email")}>
+                        <TouchableOpacity onPress={() => router.push("/(auth)/confirm-email")}>
                             <Text style={styles.linkText}>Confirmer mon adresse mail</Text>
                         </TouchableOpacity>
                     </View>

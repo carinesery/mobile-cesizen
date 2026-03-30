@@ -20,8 +20,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [initializing, setInitializing] = useState(true); // checkAuth en cours
+  const [loading, setLoading] = useState(false);  // ✅ FALSE initialement (pas d'action en cours)
+  const [initializing, setInitializing] = useState(true); // Mais initializing est true = checkAuth en cours
 
 
   const checkAuth = async () => {
@@ -47,7 +47,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // await AsyncStorage.multiRemove(["accessToken", "refreshToken"]);
       // setUser(null);
     } finally {
-      setInitializing(false); // <-- terminé le check initial
+      setInitializing(false); // ✅ Fin du check initial
     }
   };
 
