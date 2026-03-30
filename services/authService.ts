@@ -3,7 +3,7 @@
  */
 
 import { getAPI } from './api';
-import { LoginRequest, LoginResponse, RegisterRequest, ForgotPasswordRequest, ResetPasswordRequest } from '../types/auth';
+import { LoginRequest, LoginResponse, RegisterRequest, ForgotPasswordRequest, ResetPasswordRequest, User } from '../types/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const api = getAPI();
@@ -31,7 +31,7 @@ export const authService = {
     try {
       const response = await api.get('/profile');
       return response.data;
-      
+
     } catch (error: any) {
       const message = error.response?.data?.message || 'Erreur de connexion';
 
@@ -43,29 +43,19 @@ export const authService = {
   /**
    * Inscrit un nouvel utilisateur
    */
-  async register(data: RegisterRequest): Promise<LoginResponse> {
+  async register(data: RegisterRequest | FormData): Promise<User> {
     try {
-      const formData = new FormData();
-      formData.append('username', data.username);
-      formData.append('email', data.email);
-      formData.append('password', data.password);
-      formData.append('confirmPassword', data.confirmPassword);
-      formData.append('termsConsent', String(data.termsConsent));
-      formData.append('privacyConsent', String(data.privacyConsent));
 
-      const response = await api.post<LoginResponse>('/auth/register', formData, {
+      const response = await api.post<User>('/auth/register-mobile', data, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
 
-      const { accessToken, refreshToken } = response.data;
+      const user = response.data;
+      console.log("Utilisateur enregistré :", user);
 
-      // Stocker les tokens
-      await AsyncStorage.setItem('accessToken', accessToken);
-      await AsyncStorage.setItem('refreshToken', refreshToken);
-
-      return response.data;
+      return user;
     } catch (error: any) {
       throw error;
     }
