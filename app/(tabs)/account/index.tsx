@@ -32,12 +32,23 @@ export default function AccountScreen() {
             >
                 <Text style={styles.buttonText}>Consulter mon profil</Text>
             </TouchableOpacity>
-
+             <TouchableOpacity
+                style={styles.button}
+                onPress={() => router.push("/account/update-password")}
+            >
+                <Text style={styles.buttonText}>Modifier mon mot de passe</Text>
+            </TouchableOpacity>
             <TouchableOpacity
                 style={styles.button}
                 onPress={() => router.push("/account/cgu")}
             >
                 <Text style={styles.buttonText}>Conditions générales</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+                style={styles.button}
+                onPress={() => router.push("/account/privacy")}
+            >
+                <Text style={styles.buttonText}>Politique de confidentialité</Text>
             </TouchableOpacity>
 
             <TouchableOpacity

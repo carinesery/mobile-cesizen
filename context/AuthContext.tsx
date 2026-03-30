@@ -37,7 +37,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const response = await authService.getProfile(); // un call pour récupérer le user
       setUser(response.data);
       
-      console.log("checkAuth nouvel accessToken :", accessToken);
+      console.log("User récupéré du checkAuth :", response.data);
 
     } catch (error) {
 
