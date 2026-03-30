@@ -22,14 +22,14 @@ export const initializeAPI = (): AxiosInstance => {
     if (accessToken) {
       config.headers.Authorization = `Bearer ${accessToken}`;
     }
-    return config;
+    return config; // envoi de la requête à l'api
   });
 
   // Interceptor pour gérer les erreurs d'authentification
   api.interceptors.response.use(
     (response) => response,
     async (error: AxiosError) => {
-      const originalRequest = error.config as any;
+      const originalRequest = error.config as any; // error.config = requête envoyée
 
       // Si erreur 401 et pas déjà tenté de refresh
       if (error.response?.status === 401 &&
@@ -43,12 +43,12 @@ export const initializeAPI = (): AxiosInstance => {
 
           if (!refreshToken) {
             return Promise.reject(error); // 👈 on laisse passer l'erreur
-            //throw new Error('No refresh token available');/
           }
 
-          const response = await api!.post('/auth/refresh-token', {
+          const response = await api!.post('/auth/refresh-token-mobile', {
             refreshToken,
           });
+          console.log("Token rafraîchi avec succès :", response.data);
 
           const { accessToken, refreshToken: newRefreshToken } = response.data;
 
@@ -60,12 +60,12 @@ export const initializeAPI = (): AxiosInstance => {
           return api!(originalRequest);
 
         } catch (refreshError) {
+          
           // Impossible de refresh, déconnecter l'utilisateur
           await AsyncStorage.removeItem('accessToken');
           await AsyncStorage.removeItem('refreshToken');
 
           return Promise.reject(refreshError);
-          //throw refreshError;
         }
       }
 

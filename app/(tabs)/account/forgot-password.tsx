@@ -2,10 +2,8 @@
 import { Redirect } from "expo-router";
 import { Text, View } from "react-native";
 
-export default function LoginScreen() {
+export default function ResetPasswordScreen() {
 
-    // peut rediriger vers l'écran mot de passe oublié
-        
 
     return (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>

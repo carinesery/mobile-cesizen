@@ -1,11 +1,12 @@
 // Affiche le formulaire de connextion et un lien vers mot de passe oublié
 import { useAuth } from "@/context/AuthContext";
-import { Redirect } from "expo-router";
+import { router } from "expo-router";
 import { useState, useEffect } from "react";
 import {
     Text,
     View, Button,
     TextInput, Keyboard,
+    TouchableOpacity,
     TouchableWithoutFeedback,
     KeyboardAvoidingView,
     Platform,
@@ -13,18 +14,26 @@ import {
     StyleSheet,
     ActivityIndicator,
 } from "react-native";
+import PasswordInput from "../../../components/PasswordInput";
 import loginUserBodySchema from "../../../schemas/authSchema";
 
 export default function LoginScreen() {
 
-    const { login, user, loading, error, clearError } = useAuth();
+    const { login, loading, user } = useAuth();
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (user) {
+            router.replace("/account");
+        }
+    }, [user]);
 
     const handleLogin = async () => {
         Keyboard.dismiss();
-        loading;
+
         try {
 
             // Validation Zod avant de login
@@ -35,39 +44,15 @@ export default function LoginScreen() {
                 return;
             }
 
-            const data = await login(email, password);
+            await login(email, password);
 
-            console.log("Login réussi :", data);
+        }
+        catch (error: any) {
+            console.log("LoginScreen reçoit :", error);
+            setError(error.message);
 
-            //   if (!data.response.ok) {
-            // setError(data.message); // 👈 ICI
-            // return;
-        // }
-    }
-        catch (error) {
-            console.log("Erreur login :", error);
-        } finally {
-            !loading;
         }
     };
-
-    useEffect(() => {
-        if (error) {
-            Alert.alert("Erreur", error, [{ text: "OK", onPress: clearError }]);
-        }
-    }, [error]);
-
-    if (loading) {
-        return (
-            <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-                <ActivityIndicator size="large" color="#007AFF" />
-            </View>
-        );
-    }
-
-    if (user && !loading) {
-        return <Redirect href="/account/profile" />
-    }
 
     // peut rediriger vers l'écran mot de passe oublié
     // ou vers l'écran d'inscription register.tsx
@@ -76,7 +61,12 @@ export default function LoginScreen() {
             style={{ flex: 1 }}
             behavior={Platform.OS === "ios" ? "padding" : "height"}
         >
-
+            {error && (
+                <Text style={{ color: "red", marginBottom: 10 }}>
+                    {error}
+                </Text>
+            )}
+            {loading && <ActivityIndicator size="large" />}
 
             <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
                 <View style={styles.container}>
@@ -89,15 +79,25 @@ export default function LoginScreen() {
                         style={styles.input}
                     />
 
-                    <TextInput
+                    <PasswordInput
                         placeholder="Mot de passe"
                         value={password}
                         onChangeText={setPassword}
-                        secureTextEntry
-                        style={styles.input}
                     />
 
                     <Button title="Se connecter" onPress={handleLogin} />
+
+                    {/* === Ici les liens === */}
+                    <View style={styles.linksContainer}>
+                        <TouchableOpacity onPress={() => router.push("/account/forgot-password")}>
+                            <Text style={styles.linkText}>Mot de passe oublié ?</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity onPress={() => router.push("/account/register")}>
+                            <Text style={styles.linkText}>Créer un compte</Text>
+                        </TouchableOpacity>
+                    </View>
+
                 </View>
             </TouchableWithoutFeedback>
         </KeyboardAvoidingView>
@@ -112,6 +112,18 @@ const styles = StyleSheet.create({
         padding: 10,
         marginBottom: 15,
         borderRadius: 5,
+    },
+    icon: {
+        padding: 10,
+    },
+    linksContainer: {
+        marginTop: 20,
+        alignItems: "center",
+        gap: 10, // si RN >= 0.70, sinon utiliser marginBottom sur chaque lien
+    },
+    linkText: {
+        color: "#007AFF",
+        textDecorationLine: "underline",
     },
 });
 
