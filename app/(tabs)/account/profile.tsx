@@ -14,10 +14,6 @@ export default function ProfileScreen() {
     );
   }
 
-  const handleEditProfile = () => {
-    router.push("/account/profile-edit");
-  };
-
   return (
     <View style={styles.container}>
       {/* Photo de profil */}
@@ -35,8 +31,17 @@ export default function ProfileScreen() {
       <Text style={styles.email}>{user.email}</Text>
 
       {/* Bouton modifier */}
-      <TouchableOpacity style={styles.button} onPress={handleEditProfile}>
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => router.push("/account/profile-edit")}
+      >
         <Text style={styles.buttonText}>Modifier le profil</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => router.push("/account/update-password")}
+      >
+        <Text style={styles.buttonText}>Modifier mon mot de passe</Text>
       </TouchableOpacity>
     </View>
   );

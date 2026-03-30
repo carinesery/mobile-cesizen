@@ -24,38 +24,35 @@ export default function AccountScreen() {
     // Si connecté --> affiche les blocs profil, CGU, faq 
     return (
         <ScrollView contentContainerStyle={styles.container}>
-            <Text style={styles.title}>Mon Compte</Text>
+            {/* <Text style={styles.title}>Mon Compte</Text> */}
 
+            {/* Vers profil */}
             <TouchableOpacity
                 style={styles.button}
                 onPress={() => router.push("/account/profile")}
             >
                 <Text style={styles.buttonText}>Consulter mon profil</Text>
             </TouchableOpacity>
-             <TouchableOpacity
-                style={styles.button}
-                onPress={() => router.push("/account/update-password")}
-            >
-                <Text style={styles.buttonText}>Modifier mon mot de passe</Text>
-            </TouchableOpacity>
+
+            {/* Vers legal */}
             <TouchableOpacity
                 style={styles.button}
-                onPress={() => router.push("/account/cgu")}
+                onPress={() => router.push("/account/legals")}
             >
                 <Text style={styles.buttonText}>Conditions générales</Text>
             </TouchableOpacity>
+              {/* Vers legal */}
             <TouchableOpacity
                 style={styles.button}
-                onPress={() => router.push("/account/privacy")}
+                onPress={() => router.push("/account/session")}
             >
-                <Text style={styles.buttonText}>Politique de confidentialité</Text>
+                <Text style={styles.buttonText}>Session</Text>
             </TouchableOpacity>
-
             <TouchableOpacity
                 style={styles.button}
-                onPress={() => router.push("/account/faq")}
+                onPress={() => router.push("/account/secure")}
             >
-                <Text style={styles.buttonText}>FAQ</Text>
+                <Text style={styles.buttonText}>Zone de danger</Text>
             </TouchableOpacity>
         </ScrollView>
     );
