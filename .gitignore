@@ -56,7 +56,6 @@ types/mood.ts
 types/profile.ts
 types/stats.ts
 services/moodService.ts
-services/profileService.ts
 services/statsService.ts
 constants/strings.ts
 

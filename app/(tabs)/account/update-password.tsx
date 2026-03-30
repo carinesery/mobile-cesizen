@@ -1,96 +1,121 @@
 import { useState } from "react";
 import {
-  View,
-  Text,
-  TextInput,
-  Button,
-  Alert,
-  StyleSheet,
-  ActivityIndicator,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform
+    View,
+    Text,
+    Button,
+    Alert,
+    StyleSheet,
+    ActivityIndicator,
+    ScrollView,
+    KeyboardAvoidingView,
+    Platform,
 } from "react-native";
+import { updatedPasswordSchema } from "@/schemas/profileSchema";
 import PasswordInput from "@/components/PasswordInput";
-import { authService } from "@/services";
-import { useRouter } from "expo-router";
+import { authService, profileService } from "@/services";
+import { router } from "expo-router";
 
-export default function ChangePasswordScreen() {
-  const router = useRouter();
+export default function UpdatePasswordScreen() {
+    const [currentPassword, setCurrentPassword] = useState("");
+    const [newPassword, setNewPassword] = useState("");
+    const [confirmNewPassword, setConfirmNewPassword] = useState("");
 
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmNewPassword, setConfirmNewPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-  const handleChangePassword = async () => {
-    if (!currentPassword || !newPassword || !confirmNewPassword) {
-      Alert.alert("Erreur", "Merci de remplir tous les champs");
-      return;
-    }
+    // ==== SUBMIT ====
+    const handleUpdatePassword = async () => {
+        setError(null);
 
-    if (newPassword !== confirmNewPassword) {
-      Alert.alert("Erreur", "Le nouveau mot de passe et sa confirmation ne correspondent pas");
-      return;
-    }
+        // 1️⃣ Validation Zod
+        const parsed = updatedPasswordSchema.safeParse({
+            currentPassword,
+            newPassword,
+            confirmNewPassword,
+        });
 
-    try {
-      setLoading(true);
+        if (!parsed.success) {
+            const messages = parsed.error.errors.map(e => e.message).join("\n");
+            Alert.alert("Erreur de formulaire", messages);
+            return;
+        }
 
-      // Appel backend pour changer le mot de passe
-      await authService.updatePassword({
-        currentPassword,
-        newPassword
-      });
+        // 2️⃣ Appel API
+        try {
+            setLoading(true);
 
-      Alert.alert("Succès", "Votre mot de passe a été modifié");
-      router.replace("/account"); // ou naviguer vers la page de profil
+            await profileService.updatePassword({
+                currentPassword,
+                newPassword
+            });
 
-    } catch (error: any) {
-      console.log("Erreur update password:", error);
-      Alert.alert("Erreur", error.message || "Impossible de modifier le mot de passe");
-    } finally {
-      setLoading(false);
-    }
-  };
+            Alert.alert("Succès", "Mot de passe mis à jour !");
 
-  return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
-      <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>Modifier le mot de passe</Text>
+            router.back();
 
-        <PasswordInput
-          placeholder="Mot de passe actuel"
-          value={currentPassword}
-          onChangeText={setCurrentPassword}
-        />
+        } catch (err: any) {
+            console.log("UpdatePasswordScreen reçoit :", err);
+            setError(err.message || "Erreur lors de la mise à jour");
+        } finally {
+            setLoading(false);
+        }
+    };
 
-        <PasswordInput
-          placeholder="Nouveau mot de passe"
-          value={newPassword}
-          onChangeText={setNewPassword}
-        />
+    return (
+        <KeyboardAvoidingView
+            style={{ flex: 1 }}
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+        >
+            <ScrollView contentContainerStyle={styles.container}>
+                <Text style={styles.title}>Changer le mot de passe</Text>
 
-        <PasswordInput
-          placeholder="Confirmer le nouveau mot de passe"
-          value={confirmNewPassword}
-          onChangeText={setConfirmNewPassword}
-        />
+                {error && <Text style={styles.errorText}>{error}</Text>}
 
-        {loading ? (
-          <ActivityIndicator size="large" color="#007AFF" style={{ marginTop: 20 }} />
-        ) : (
-          <Button title="Modifier le mot de passe" onPress={handleChangePassword} />
-        )}
-      </ScrollView>
-    </KeyboardAvoidingView>
-  );
+                {/* CURRENT PASSWORD */}
+                <PasswordInput
+                    placeholder="Mot de passe actuel"
+                    value={currentPassword}
+                    onChangeText={setCurrentPassword}
+                />
+
+                {/* NEW PASSWORD */}
+                <PasswordInput
+                    placeholder="Nouveau mot de passe"
+                    value={newPassword}
+                    onChangeText={setNewPassword}
+                />
+
+                {/* CONFIRM */}
+                <PasswordInput
+                    placeholder="Confirmer le nouveau mot de passe"
+                    value={confirmNewPassword}
+                    onChangeText={setConfirmNewPassword}
+                />
+
+                {loading ? (
+                    <ActivityIndicator size="large" color="#007AFF" style={{ marginTop: 20 }} />
+                ) : (
+                    <Button title="Mettre à jour" onPress={handleUpdatePassword} />
+                )}
+            </ScrollView>
+        </KeyboardAvoidingView>
+    );
 }
 
 const styles = StyleSheet.create({
-  container: { flexGrow: 1, justifyContent: "center", padding: 20 },
-  title: { fontSize: 24, marginBottom: 20, textAlign: "center" },
+    container: {
+        flexGrow: 1,
+        justifyContent: "center",
+        padding: 20,
+    },
+    title: {
+        fontSize: 24,
+        marginBottom: 20,
+        textAlign: "center",
+    },
+    errorText: {
+        color: "red",
+        marginBottom: 10,
+        textAlign: "center",
+    },
 });

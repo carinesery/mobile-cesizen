@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, Image, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import { useAuth } from "@/context/AuthContext";
+import { router } from "expo-router/build/exports";
 
 export default function ProfileScreen() {
   const { user } = useAuth();
@@ -14,7 +15,7 @@ export default function ProfileScreen() {
   }
 
   const handleEditProfile = () => {
-    Alert.alert("Modifier le profil", "Ici vous pouvez rediriger vers l'écran de modification.");
+    router.push("/account/profile-edit");
   };
 
   return (

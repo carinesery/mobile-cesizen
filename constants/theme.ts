@@ -125,7 +125,7 @@ export const DIMENSIONS = {
  */
 export const API_CONFIG = {
   baseURL: process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.85:3000/api',
-  timeout: 30000,
+  timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
   },
