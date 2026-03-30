@@ -5,6 +5,7 @@ export default function AccountLayout() {
         <Stack>
             <Stack.Screen name="index" options={{ headerTitle: "Mon compte" }} />
             <Stack.Screen name="login" options={{ headerTitle: "Se connecter" }} />
+            <Stack.Screen name="confirm-email" options={{ headerTitle: "Confirmer mon email" }} />
             <Stack.Screen name="forgot-password" options={{ headerTitle: "Mot de passe oublié" }} />
             <Stack.Screen name="reset-password" options={{ headerTitle: "Réinitialiser le mot de passe" }} />
             <Stack.Screen name="profile" options={{ headerTitle: "Profil" }} />

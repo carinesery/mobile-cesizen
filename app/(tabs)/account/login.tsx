@@ -96,6 +96,9 @@ export default function LoginScreen() {
                         <TouchableOpacity onPress={() => router.push("/account/register")}>
                             <Text style={styles.linkText}>Créer un compte</Text>
                         </TouchableOpacity>
+                        <TouchableOpacity onPress={() => router.push("/account/confirm-email")}>
+                            <Text style={styles.linkText}>Confirmer mon adresse mail</Text>
+                        </TouchableOpacity>
                     </View>
 
                 </View>

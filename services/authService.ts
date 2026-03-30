@@ -57,7 +57,9 @@ export const authService = {
 
       return user;
     } catch (error: any) {
-      throw error;
+      const message = error.response?.data?.message || 'Erreur de connexion';
+
+      throw new Error(message);
     }
   },
 
@@ -67,8 +69,10 @@ export const authService = {
   async forgotPassword(data: ForgotPasswordRequest): Promise<void> {
     try {
       await api.post('/auth/forgot-password', data);
-    } catch (error) {
-      throw error;
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Erreur de connexion';
+
+      throw new Error(message);
     }
   },
 
@@ -89,8 +93,10 @@ export const authService = {
   async confirmEmail(token: string): Promise<void> {
     try {
       await api.get(`/auth/confirm-email?token=${token}`);
-    } catch (error) {
-      throw error;
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Erreur de connexion';
+
+      throw new Error(message);
     }
   },
 
