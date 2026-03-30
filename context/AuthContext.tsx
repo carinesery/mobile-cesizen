@@ -1,0 +1,113 @@
+import React, { ReactNode, createContext, useContext, useState, useEffect, Children } from 'react';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { authService } from '@/services';
+import { User } from '@/types';
+
+// 	Expo Secure Store suffit
+//React Native Keychain
+
+interface AuthContextType {
+  user: User | null;
+  checkAuth: () => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => void;
+  loading: boolean;
+  initializing: boolean;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [initializing, setInitializing] = useState(true); // checkAuth en cours
+
+
+  const checkAuth = async () => {
+    try {
+
+      const accessToken = await AsyncStorage.getItem("accessToken");
+
+      if (!accessToken) {
+        await AsyncStorage.multiRemove(["accessToken", "refreshToken"]);
+        setUser(null);
+        return;
+      }
+
+      const response = await authService.getProfile(); // un call pour récupérer le user
+      setUser(response.data);
+      
+      console.log("User récupéré du checkAuth :", response.data);
+
+    } catch (error) {
+
+      console.log("checkAuth erreur :", error);
+
+      // await AsyncStorage.multiRemove(["accessToken", "refreshToken"]);
+      // setUser(null);
+    } finally {
+      setInitializing(false); // <-- terminé le check initial
+    }
+  };
+
+  // S'exécute au lancement de l'app 
+  useEffect(() => {
+    checkAuth();
+    console.log("User récup :", user);
+  }, []);
+
+
+
+  const login = async (email: string, password: string) => {
+    try {
+      setLoading(true);
+
+      const data = await authService.login({ email, password });
+      setUser(data.user);
+
+      // Gère le stockage des tokens car il gère l'état global
+      await AsyncStorage.setItem("accessToken", data.accessToken);
+      await AsyncStorage.setItem("refreshToken", data.refreshToken);
+
+    } catch (error: any) {
+      console.log("AuthContext reçoit :", error.message);
+      throw error; // On remonte/transmet l'erreur 
+
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const logout = async () => {
+    try {
+      setLoading(true);
+      await authService.logout();
+
+      // Suppression du refreshTokenet de l'accessToken de AsyncStorage
+      await AsyncStorage.removeItem("accessToken");
+      await AsyncStorage.removeItem("refreshToken");
+
+      setUser(null);
+
+    } catch (error) {
+      console.error('Logout failed:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <AuthContext.Provider value={{ user, login, logout, loading, initializing, checkAuth }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};

@@ -1,3 +1,18 @@
+// Affiche le formulaire de connextion et un lien vers mot de passe oublié
+import { Redirect } from "expo-router";
+import { Text, View } from "react-native";
+
+export default function ResetPasswordScreen() {
+
+
+    return (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+            <Text>Formulaire de réinitialisation du mot de passe</Text>
+        </View>
+    )
+};
+
+
 // import { useState } from 'react';
 // import { View, ScrollView, StyleSheet, Text } from 'react-native';
 // import { Link } from 'expo-router';

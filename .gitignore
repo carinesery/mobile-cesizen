@@ -39,7 +39,11 @@ IMPLEMENTATION_SUMMARY.md
 GETTING_STARTED.md
 
 #Autres
-context/
+context/ArticlesContext.tsx
+context/MoodContext.tsx
+context/ProfileContext.tsx
+context/StatsContext.tsx
+context/index.tsx
 components/Button.tsx
 components/Container.tsx
 components/ErrorAlert.tsx
@@ -51,9 +55,7 @@ types/index.ts
 types/mood.ts
 types/profile.ts
 types/stats.ts
-services/authService.ts
 services/moodService.ts
-services/profileService.ts
 services/statsService.ts
 constants/strings.ts
 
