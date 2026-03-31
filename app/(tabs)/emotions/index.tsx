@@ -1,14 +1,3 @@
-/**
- * Hub principal des émotions.
- * 
- * STRUCTURE :
- * 1. Écran inspirant si pas connecté (identique à avant)
- * 2. Si connecté :
- *    - CTA "Comment je me sens ?" (ou "Modifier" si déjà noté aujourd'hui)
- *    - Segmented control : Journal / Stats
- *    - Contenu conditionnel selon l'onglet actif
- */
-
 import { useEffect, useState, useMemo } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity,
@@ -902,7 +891,7 @@ const styles = StyleSheet.create({
     colorBar: {
         position: 'absolute',
         left: 0, top: 0, bottom: 0,
-        width: 5,
+        width: 7,
         borderTopLeftRadius: DIMENSIONS.borderRadius.lg,
         borderBottomLeftRadius: DIMENSIONS.borderRadius.lg,
     },

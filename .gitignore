@@ -38,27 +38,6 @@ build/
 IMPLEMENTATION_SUMMARY.md
 GETTING_STARTED.md
 
-#Autres
-context/ArticlesContext.tsx
-# context/MoodContext.tsx
-context/ProfileContext.tsx
-# context/StatsContext.tsx
-context/index.tsx
-components/Button.tsx
-components/Container.tsx
-components/ErrorAlert.tsx
-components/index.tsx
-components/Loading.tsx
-components/TextInput.tsx
-types/auth.ts
-types/index.ts    
-# types/mood.ts
-types/profile.ts
-# types/stats.ts
-# services/moodService.ts
-# services/statsService.ts
-constants/strings.ts
-
 
 
 
