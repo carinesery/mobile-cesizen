@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
     colorBar: {
         position: 'absolute',
         left: 0, top: 0, bottom: 0,
-        width: 5,
+        width: 7,
         borderTopLeftRadius: DIMENSIONS.borderRadius.lg,
         borderBottomLeftRadius: DIMENSIONS.borderRadius.lg,
     },

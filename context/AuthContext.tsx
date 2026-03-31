@@ -1,8 +1,7 @@
-import React, { ReactNode, createContext, useContext, useState, useEffect, Children } from 'react';
+import { ReactNode, createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { authService } from '@/services';
 import { User } from '@/types';
-import { RefreshControl } from 'react-native';
 
 // 	Expo Secure Store suffit
 //React Native Keychain
