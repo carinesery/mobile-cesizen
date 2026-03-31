@@ -123,10 +123,8 @@ export default function RegisterScreen() {
 
             Alert.alert("Inscription réussie !", "Vous devez maintenant confirmer votre adresse email");
 
-            // Optionnel : login auto après inscription
-            // await login(email, password);
-
-            router.replace("/account/login");
+            // Rediriger vers la confirmation d'email
+            router.replace("/(auth)/confirm-email");
 
         } catch (err: any) {
             console.log("RegisterScreen reçoit :", err);
@@ -201,7 +199,7 @@ export default function RegisterScreen() {
                     <Button title="S'inscrire" onPress={handleRegister} />
                 )}
 
-                <TouchableOpacity onPress={() => router.push("/account/login")} style={{ marginTop: 15 }}>
+                <TouchableOpacity onPress={() => router.push("/(auth)/login")} style={{ marginTop: 15 }}>
                     <Text style={styles.linkText}>Vous avez déjà un compte ? Se connecter</Text>
                 </TouchableOpacity>
             </ScrollView>

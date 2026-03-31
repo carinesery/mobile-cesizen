@@ -27,7 +27,7 @@ export default function DeleteAccountScreen() {
              
               Alert.alert("Compte supprimé", "Votre compte a été supprimé avec succès.");
               
-              router.replace("/auth/register"); 
+              router.replace("/(auth)/register"); 
             } catch (error) {
                 
               Alert.alert(

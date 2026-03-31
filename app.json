@@ -27,7 +27,8 @@
         {
           "origin": "http://localhost:8081"
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ]
   }
 }

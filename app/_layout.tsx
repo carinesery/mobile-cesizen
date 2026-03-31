@@ -1,14 +1,17 @@
 
 import { AuthProvider } from '@/context/AuthContext';
+import { MoodProvider } from '@/context/MoodContext';
 import { Stack } from 'expo-router';
 
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        {/* <Stack.Screen name="article/[slug]" options={{ title: "Article", headerBackTitle: "Retour" }} /> */}
-      </Stack>
+      <MoodProvider>
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="(auth)" options={{ headerShown: false, presentation: 'modal' }} />
+        </Stack>
+      </MoodProvider>
     </AuthProvider>
   )
 }

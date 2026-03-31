@@ -1,4 +1,4 @@
-import { Redirect, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { Text, View, TouchableOpacity, ActivityIndicator, StyleSheet, ScrollView } from "react-native";
 import { useAuth } from "@/context/AuthContext";
 
@@ -7,7 +7,7 @@ export default function AccountScreen() {
     const router = useRouter();
     const { user, initializing } = useAuth();
 
-    // ⚠️ On attend que AuthContext ait fini son check initial
+    // Chargement initial
     if (initializing) {
         return (
             <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
@@ -15,10 +15,38 @@ export default function AccountScreen() {
             </View>
         );
     }
-    // Si pas connecté → redirige vers login
+
+    // Pas connecté → afficher un écran invitant à se connecter (PAS de redirect !)
     if (!user) {
-        router.replace("/account/login");
-        return null; // ou un loader
+        return (
+            <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 20 }}>
+                <Text style={{ fontSize: 20, fontWeight: "bold", marginBottom: 10 }}>Mon compte</Text>
+                <Text style={{ fontSize: 16, color: "#666", marginBottom: 30, textAlign: "center" }}>
+                    Connectez-vous pour accéder à votre compte
+                </Text>
+                <TouchableOpacity
+                    style={[styles.button, { width: '80%' }]}
+                    onPress={() => router.push("/(auth)/login")}
+                >
+                    <Text style={styles.buttonText}>Se connecter</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={[styles.button, { width: '80%', backgroundColor: '#34C759' }]}
+                    onPress={() => router.push("/(auth)/register")}
+                >
+                    <Text style={styles.buttonText}>Créer un compte</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    onPress={() => router.push("/(auth)/confirm-email")}
+                    style={{ marginTop: 15 }}
+                >
+                    <Text style={{ color: '#007AFF', fontSize: 14, textDecorationLine: 'underline' }}>
+                        Je viens de créer mon compte, je confirme mon email
+                    </Text>
+                </TouchableOpacity>
+            </View>
+        );
     }
 
     // Si connecté --> affiche les blocs profil, CGU, faq 
@@ -41,7 +69,7 @@ export default function AccountScreen() {
             >
                 <Text style={styles.buttonText}>Conditions générales</Text>
             </TouchableOpacity>
-              {/* Vers legal */}
+            {/* Vers legal */}
             <TouchableOpacity
                 style={styles.button}
                 onPress={() => router.push("/account/logout")}
