@@ -12,8 +12,10 @@
 import { useEffect, useState, useMemo } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity,
-    ActivityIndicator, FlatList, ScrollView
+    ActivityIndicator, ScrollView, Platform, Dimensions,
 } from 'react-native';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { PieChart, LineChart } from 'react-native-gifted-charts';
 import { useAuth } from '@/context/AuthContext';
 import { useMood } from '@/context/MoodContext';
 import { useRouter } from 'expo-router';
@@ -21,6 +23,7 @@ import { COLORS, SPACING, DIMENSIONS } from '@/constants/theme';
 import { MoodEntry } from '@/types/mood';
 import { StatsData, StatsPeriod } from '@/types/stats';
 import { statsService } from '@/services/statsService';
+import MoodEntryCard from '@/components/MoodEntry';
 
 // ─── Couleurs par émotion (associées par titre, on pourra affiner) ───
 const EMOTION_COLORS: Record<string, string> = {
@@ -49,12 +52,6 @@ const formatDate = (isoDate: string) => {
     return d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'long' });
 };
 
-const formatDateFull = () => {
-    return new Date().toLocaleDateString('fr-FR', {
-        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
-    });
-};
-
 // ─── Vérifier si une date correspond à aujourd'hui ───
 const isToday = (isoDate: string) => {
     const d = new Date(isoDate);
@@ -64,7 +61,7 @@ const isToday = (isoDate: string) => {
 
 export default function EmotionsHub() {
     const { user, initializing } = useAuth();
-    const { entries, isLoading, fetchEntries, fetchEmotions } = useMood();
+    const { entries, emotions, isLoading, fetchEntries, fetchEmotions } = useMood();
     const router = useRouter();
 
     // Onglet actif : journal ou stats
@@ -77,34 +74,40 @@ export default function EmotionsHub() {
 
     // Charger les données au montage (seulement si connecté)
     useEffect(() => {
-        if (user) {
-            fetchEntries().catch(() => {});
-            fetchEmotions().catch(() => {});
-        }
+        const fetchData = async () => {
+            if (user) {
+                try {
+                    await fetchEntries();
+                    await fetchEmotions();
+                } catch {
+                    // Handle errors if needed
+                }
+            }
+        };
+        fetchData();
     }, [user]);
 
     // Charger les stats quand on switch sur l'onglet stats ou qu'on change de période
     useEffect(() => {
-        if (user && activeTab === 'stats') {
-            setStatsLoading(true);
-            statsService.getStats(statsPeriod)
-                .then(setStats)
-                .catch(() => setStats(null))
-                .finally(() => setStatsLoading(false));
-        }
+        const fetchStats = async () => {
+            if (user && activeTab === 'stats') {
+                setStatsLoading(true);
+                try {
+                    const data = await statsService.getStats(statsPeriod);
+                    setStats(data);
+                } catch {
+                    setStats(null);
+                } finally {
+                    setStatsLoading(false);
+                }
+            }
+        };
+        fetchStats();
     }, [user, activeTab, statsPeriod]);
 
     // L'entrée d'aujourd'hui (si elle existe)
     const todayEntry = useMemo(
         () => entries.find(e => isToday(e.emotionDate)),
-        [entries]
-    );
-
-    // Trier les entrées par date décroissante
-    const sortedEntries = useMemo(
-        () => [...entries].sort((a, b) =>
-            new Date(b.emotionDate).getTime() - new Date(a.emotionDate).getTime()
-        ),
         [entries]
     );
 
@@ -117,7 +120,7 @@ export default function EmotionsHub() {
         );
     }
 
-    // ─── PAS CONNECTÉ → écran inspirant ───
+    // Si pas connecté, écran avec message inspirant 
     if (!user) {
         return (
             <View style={styles.centered}>
@@ -138,12 +141,12 @@ export default function EmotionsHub() {
         );
     }
 
-    // ─── CONNECTÉ → HUB ───
+    // Si connecté, Moodentries et Stats
     return (
         <View style={styles.container}>
             {/* Header */}
-            <Text style={styles.headerTitle}>Mes émotions</Text>
-            <Text style={styles.dateText}>{formatDateFull()}</Text>
+            {/* <Text style={styles.headerTitle}>Mes émotions</Text> */}
+            {/* <Text style={styles.dateText}>{formatDateFull()}</Text> */}
 
             {/* Segmented Control : Journal / Stats */}
             <View style={styles.segmentedControl}>
@@ -167,7 +170,7 @@ export default function EmotionsHub() {
 
             {/* Contenu selon l'onglet actif */}
             {activeTab === 'journal' ? (
-                <JournalTab entries={sortedEntries} isLoading={isLoading} />
+                <JournalTab entries={entries} emotions={emotions} isLoading={isLoading} />
             ) : (
                 <StatsTab
                     stats={stats}
@@ -177,25 +180,25 @@ export default function EmotionsHub() {
                 />
             )}
 
-            {/* FAB : bouton flottant en bas — toujours visible */}
+            {/* FAB : bouton flottant en bas — toujours visible, toujours + */}
             <TouchableOpacity
-                style={[styles.fab, todayEntry && { backgroundColor: COLORS.accent }]}
+                style={styles.fab}
                 onPress={() => {
+                    // S'il y a déjà une entrée aujourd'hui → pas de date par défaut
+                    // Sinon → date d'aujourd'hui par défaut
                     if (todayEntry) {
-                        router.push({ pathname: '/emotions/new-entry', params: { editId: todayEntry.idMoodEntry } });
+                        router.push({ pathname: '/emotions/new-entry', params: { noDefaultDate: '1' } });
                     } else {
                         router.push('/emotions/new-entry');
                     }
                 }}
             >
-                <Text style={styles.fabText}>
-                    {todayEntry ? '✏️' : '＋'}
-                </Text>
+                <Text style={styles.fabText}>＋</Text>
             </TouchableOpacity>
             {/* Label sous le FAB */}
-            <Text style={styles.fabLabel}>
+            {/* <Text style={styles.fabLabel}>
                 {todayEntry ? 'Modifier' : 'Comment je me sens ?'}
-            </Text>
+            </Text> */}
         </View>
     );
 }
@@ -204,69 +207,283 @@ export default function EmotionsHub() {
 // COMPOSANT : Onglet Journal
 // Une FlatList de cartes, chaque carte = une entrée d'émotion
 // ══════════════════════════════════════════════════════════
-function JournalTab({ entries, isLoading }: { entries: MoodEntry[]; isLoading: boolean }) {
-    if (isLoading) {
-        return (
-            <View style={styles.centered}>
-                <ActivityIndicator size="small" color={COLORS.primary} />
-            </View>
-        );
+// ── Helpers pour classer les entrées par section ──
+const getMonday = (d: Date) => {
+    const date = new Date(d);
+    const day = date.getDay();
+    const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+    date.setDate(diff);
+    date.setHours(0, 0, 0, 0);
+    return date;
+};
+
+const getSectionKey = (isoDate: string): string => {
+    const entryDate = new Date(isoDate);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const entryDay = new Date(entryDate.getFullYear(), entryDate.getMonth(), entryDate.getDate());
+
+    if (entryDay.getTime() === today.getTime()) return 'Aujourd\'hui';
+
+    const monday = getMonday(now);
+    const sunday = new Date(monday);
+    sunday.setDate(sunday.getDate() + 6);
+    sunday.setHours(23, 59, 59, 999);
+    if (entryDay >= monday && entryDay <= sunday) return 'Cette semaine';
+
+    if (entryDate.getMonth() === now.getMonth() && entryDate.getFullYear() === now.getFullYear()) {
+        return 'Ce mois-ci';
     }
 
-    if (entries.length === 0) {
-        return (
-            <View style={styles.emptyState}>
-                <Text style={styles.emptyEmoji}>📝</Text>
-                <Text style={styles.emptyText}>Aucune entrée pour le moment</Text>
-                <Text style={styles.emptySubtext}>
-                    Appuyez sur le bouton ci-dessus pour enregistrer votre première émotion
-                </Text>
-            </View>
-        );
-    }
+    return 'Avant';
+};
+
+const SECTION_ORDER = ['Aujourd\'hui', 'Cette semaine', 'Ce mois-ci', 'Avant'];
+
+// ══════════════════════════════════════════════════════════
+// COMPOSANT : Onglet Journal — SectionList avec filtres
+// ══════════════════════════════════════════════════════════
+
+import { Emotion } from '@/types/mood';
+
+function JournalTab({
+    entries, emotions, isLoading
+}: {
+    entries: MoodEntry[];
+    emotions: Emotion[];
+    isLoading: boolean;
+}) {
+    const router = useRouter();
+    // Filtre par date
+    const [searchDate, setSearchDate] = useState<Date | null>(null);
+    const [showSearchPicker, setShowSearchPicker] = useState(false);
+    // Date temporaire pendant la sélection (iOS spinner reste ouvert)
+    const [tempDate, setTempDate] = useState<Date>(new Date());
+
+    // Filtre par émotion
+    const [filterEmotionId, setFilterEmotionId] = useState<string | null>(null);
+
+    // Émotions principales pour les chips
+    const primaryEmotions = useMemo(
+        () => emotions.filter(e => e.level === 'LEVEL_1'),
+        [emotions]
+    );
+
+    // Filtrer et trier les entrées
+    const filteredEntries = useMemo(() => {
+        let result = [...entries];
+
+        // Filtre par date exacte
+        if (searchDate) {
+            const target = searchDate.toDateString();
+            result = result.filter(e => new Date(e.emotionDate).toDateString() === target);
+        }
+
+        // Filtre par émotion
+        if (filterEmotionId) {
+            result = result.filter(e => e.emotionId === filterEmotionId);
+        }
+
+        // Tri par date décroissante
+        result.sort((a, b) => new Date(b.emotionDate).getTime() - new Date(a.emotionDate).getTime());
+        return result;
+    }, [entries, searchDate, filterEmotionId]);
+
+    // Entrées d'aujourd'hui (toujours visibles, séparées de la SectionList)
+    const todayEntries = useMemo(() => {
+        if (searchDate) return null; // pas de bloc "Aujourd'hui" en mode recherche date
+        let result = filteredEntries.filter(e => isToday(e.emotionDate));
+        return result;
+    }, [filteredEntries, searchDate]);
+
+    // Construire les sections (SANS "Aujourd'hui")
+    const sections = useMemo(() => {
+        if (searchDate) {
+            return [{ title: formatDate(searchDate.toISOString()), data: filteredEntries }];
+        }
+
+        const grouped: Record<string, MoodEntry[]> = {};
+        for (const entry of filteredEntries) {
+            const key = getSectionKey(entry.emotionDate);
+            if (key === 'Aujourd\'hui') continue; // géré séparément
+            if (!grouped[key]) grouped[key] = [];
+            grouped[key].push(entry);
+        }
+
+        return SECTION_ORDER
+            .filter(key => key !== 'Aujourd\'hui' && grouped[key] && grouped[key].length > 0)
+            .map(key => ({ title: key, data: grouped[key] || [] }));
+    }, [filteredEntries, searchDate]);
+
+    const clearFilters = () => {
+        setSearchDate(null);
+        setFilterEmotionId(null);
+        setShowSearchPicker(false);
+    };
+
+    const hasFilters = searchDate !== null || filterEmotionId !== null;
 
     return (
-        <FlatList
-            data={entries}
-            keyExtractor={(item) => item.idMoodEntry}
-            contentContainerStyle={{ paddingBottom: 20 }}
-            showsVerticalScrollIndicator={false}
-            renderItem={({ item }) => {
-                const emotionTitle = item.emotion?.title;
-                const color = getEmotionColor(emotionTitle);
-                const emoji = getEmotionEmoji(emotionTitle);
-
-                return (
-                    <View style={[styles.entryCard, { borderLeftColor: color }]}>
-                        <View style={styles.entryHeader}>
-                            <Text style={styles.entryEmoji}>{emoji}</Text>
-                            <View style={styles.entryInfo}>
-                                <Text style={styles.entryEmotion}>{emotionTitle || 'Émotion'}</Text>
-                                {item.feeling && (
-                                    <Text style={styles.entryFeeling}>{item.feeling.title}</Text>
-                                )}
-                            </View>
-                            <View style={styles.entryRight}>
-                                <Text style={styles.entryIntensity}>{item.parentEmotionIntensity}/10</Text>
-                                <Text style={styles.entryDate}>{formatDate(item.emotionDate)}</Text>
-                            </View>
+        <View style={{ flex: 1 }}>
+            {/* ─── Recherche par date ─── */}
+            <View style={styles.filterRow}>
+                <TouchableOpacity
+                    style={[styles.dateSearchBtn, searchDate && styles.dateSearchBtnActive]}
+                    onPress={() => {
+                        setTempDate(searchDate || new Date());
+                        setShowSearchPicker(true);
+                    }}
+                >
+                    <Text style={[styles.dateSearchText, searchDate && styles.dateSearchTextActive]}>
+                        {searchDate
+                            ? `📅 ${searchDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}`
+                            : '📅 Rechercher une date'}
+                    </Text>
+                </TouchableOpacity>
+                {hasFilters && !showSearchPicker && (
+                    <TouchableOpacity style={styles.resetPickerBtn} onPress={clearFilters}>
+                        <Text style={styles.resetPickerText}>Réinitialiser</Text>
+                    </TouchableOpacity>
+                )}
+            </View>
+            {showSearchPicker && (
+                <View>
+                    <DateTimePicker
+                        value={tempDate}
+                        mode="date"
+                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                        maximumDate={new Date()}
+                        minimumDate={new Date('2026-01-01')}
+                        locale="fr-FR"
+                        onChange={(_event: DateTimePickerEvent, date?: Date) => {
+                            if (Platform.OS === 'ios') {
+                                if (date) setTempDate(new Date(date.getTime()));
+                            } else {
+                                setShowSearchPicker(false);
+                                if (date) setSearchDate(new Date(date.getTime()));
+                            }
+                        }}
+                    />
+                    {Platform.OS === 'ios' && (
+                        <View style={styles.pickerActions}>
+                            <TouchableOpacity
+                                style={styles.resetPickerBtn}
+                                onPress={clearFilters}
+                            >
+                                <Text style={styles.resetPickerText}>Réinitialiser</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.validatePickerBtn}
+                                onPress={() => {
+                                    setSearchDate(new Date(tempDate.getTime()));
+                                    setShowSearchPicker(false);
+                                }}
+                            >
+                                <Text style={styles.validatePickerText}>Valider</Text>
+                            </TouchableOpacity>
                         </View>
-                        {item.comment && (
-                            <Text style={styles.entryComment} numberOfLines={2}>
-                                💬 {item.comment}
+                    )}
+                </View>
+            )}
+
+            {/* ─── Chips filtre par émotion ─── */}
+            <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.chipsRow}
+                contentContainerStyle={styles.chipsContent}
+            >
+                {primaryEmotions.map((emotion) => {
+                    const isActive = filterEmotionId === emotion.idEmotion;
+                    return (
+                        <TouchableOpacity
+                            key={emotion.idEmotion}
+                            style={[styles.chip, isActive && styles.chipActive]}
+                            onPress={() => setFilterEmotionId(isActive ? null : emotion.idEmotion)}
+                        >
+                            <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
+                                {emotion.title}
                             </Text>
-                        )}
-                    </View>
-                );
-            }}
-        />
+                        </TouchableOpacity>
+                    );
+                })}
+            </ScrollView>
+
+            {/* ─── Liste ou chargement ─── */}
+            {isLoading ? (
+                <View style={styles.centered}>
+                    <ActivityIndicator size="small" color={COLORS.primary} />
+                </View>
+            ) : !searchDate && sections.length === 0 && todayEntries?.length === 0 && !hasFilters ? (
+                <View style={styles.emptyState}>
+                    <Text style={styles.emptyEmoji}>📝</Text>
+                    <Text style={styles.emptyText}>Aucune entrée pour le moment</Text>
+                    <Text style={styles.emptySubtext}>
+                        Appuyez sur + pour enregistrer votre première émotion
+                    </Text>
+                </View>
+            ) : (
+                <ScrollView
+                    contentContainerStyle={{ paddingBottom: 90 }}
+                    showsVerticalScrollIndicator={false}
+                >
+                    {/* Bloc Aujourd'hui */}
+                    {todayEntries !== null && (
+                        <View style={styles.todaySection}>
+                            <Text style={styles.sectionHeaderToday}>Aujourd'hui</Text>
+                            {todayEntries.length > 0 ? (
+                                todayEntries.map(item => (
+                                    <MoodEntryCard key={item.idMoodEntry} entry={item} />
+                                ))
+                            ) : (
+                                <TouchableOpacity
+                                    style={styles.todayPlaceholder}
+                                    onPress={() => router.push('/emotions/new-entry')}
+                                >
+                                    <Text style={styles.todayPlaceholderEmoji}>🌤️</Text>
+                                    <Text style={styles.todayPlaceholderText}>
+                                        Comment vous sentez-vous aujourd'hui ?
+                                    </Text>
+                                </TouchableOpacity>
+                            )}
+                        </View>
+                    )}
+
+                    {/* Autres sections */}
+                    {sections.map(section => (
+                        <View key={section.title} style={styles.sectionContainer}>
+                            <Text style={styles.sectionHeader}>{section.title}</Text>
+                            {section.data.length > 0 ? (
+                                section.data.map(item => (
+                                    <MoodEntryCard key={item.idMoodEntry} entry={item} />
+                                ))
+                            ) : searchDate ? (
+                                <View style={styles.noResultSection}>
+                                    <Text style={styles.noResultText}>Aucune entrée à cette date</Text>
+                                </View>
+                            ) : null}
+                        </View>
+                    ))}
+
+                    {/* Aucun résultat (filtres actifs, rien nulle part) */}
+                    {hasFilters && sections.length === 0 && todayEntries !== null && todayEntries.length === 0 && (
+                        <View style={styles.emptyState}>
+                            <Text style={styles.emptyText}>Aucun résultat</Text>
+                            <Text style={styles.emptySubtext}>Essayez de modifier vos filtres</Text>
+                        </View>
+                    )}
+                </ScrollView>
+            )}
+        </View>
     );
 }
 
 // ══════════════════════════════════════════════════════════
 // COMPOSANT : Onglet Statistiques
-// Barres de répartition horizontales + émotion dominante
+// Camembert répartition · Courbe intensité · Fréquences
 // ══════════════════════════════════════════════════════════
+const screenWidth = Dimensions.get('window').width;
+
 function StatsTab({
     stats, period, onPeriodChange, isLoading
 }: {
@@ -280,6 +497,31 @@ function StatsTab({
         { key: 'month', label: 'Mois' },
         { key: 'year', label: 'Année' },
     ];
+
+    /* ── Données pour le camembert ── */
+    const pieData = useMemo(() => {
+        if (!stats) return [];
+        const total = stats.totalEntries;
+        return stats.intensityByEmotion.map((e) => {
+            const pct = total > 0 ? Math.round((e.count / total) * 100) : 0;
+            return {
+                value: e.count,
+                color: getEmotionColor(e.label),
+                text: `${pct}%`,
+                label: e.label,
+            };
+        });
+    }, [stats]);
+
+    /* ── Données pour la courbe d'intensité ── */
+    const lineData = useMemo(() => {
+        if (!stats || stats.evolutionByDay.length === 0) return null;
+        const last7 = stats.evolutionByDay.slice(-7);
+        return last7.map((d) => ({
+            value: d.avgIntensity,
+            label: new Date(d.date).toLocaleDateString('fr-FR', { weekday: 'short' }).slice(0, 3),
+        }));
+    }, [stats]);
 
     return (
         <ScrollView style={styles.statsContainer} showsVerticalScrollIndicator={false}>
@@ -315,67 +557,74 @@ function StatsTab({
                         {stats.totalEntries} entrée{stats.totalEntries > 1 ? 's' : ''} sur cette période
                     </Text>
 
-                    {/* Émotion dominante */}
-                    {stats.mostFrequent && (
-                        <View style={styles.dominantCard}>
-                            <Text style={styles.dominantLabel}>Émotion dominante</Text>
-                            <View style={styles.dominantRow}>
-                                <Text style={styles.dominantEmoji}>
-                                    {getEmotionEmoji(stats.mostFrequent.label)}
-                                </Text>
-                                <Text style={styles.dominantTitle}>{stats.mostFrequent.label}</Text>
-                                <Text style={styles.dominantCount}>
-                                    {stats.mostFrequent.count} fois · moy. {stats.mostFrequent.avgIntensity}/10
-                                </Text>
-                            </View>
+                    {/* ── Camembert (répartition) ── */}
+                    <View style={styles.chartCard}>
+                        <Text style={styles.chartTitle}>Répartition des émotions</Text>
+                        <PieChart
+                            data={pieData}
+                            radius={90}
+                        />
+                        {/* Légende */}
+                        <View style={styles.legendContainer}>
+                            {pieData.map((item: any) => (
+                                <View key={item.label} style={styles.legendItem}>
+                                    <View style={[styles.legendDot, { backgroundColor: item.color }]} />
+                                    <Text style={styles.legendText}>{item.label} {item.text}</Text>
+                                </View>
+                            ))}
+                        </View>
+                    </View>
+
+                    {/* ── Courbe d'intensité ── */}
+                    {lineData && (
+                        <View style={styles.chartCard}>
+                            <Text style={styles.chartTitle}>Évolution de l'intensité</Text>
+                            <LineChart
+                                data={lineData}
+                                width={screenWidth - SPACING.md * 6}
+                                height={180}
+                                curved
+                                color={COLORS.primary}
+                                thickness={2}
+                                dataPointsColor={COLORS.primary}
+                                dataPointsRadius={5}
+                                yAxisColor="transparent"
+                                xAxisColor={COLORS.border}
+                                yAxisTextStyle={{ color: COLORS.textLight, fontSize: 11 }}
+                                xAxisLabelTextStyle={{ color: COLORS.textLight, fontSize: 11 }}
+                                noOfSections={5}
+                                maxValue={10}
+                                isAnimated
+                            />
                         </View>
                     )}
 
-                    {/* Barres de répartition */}
-                    <Text style={styles.sectionTitle}>Répartition</Text>
-                    {stats.intensityByEmotion.map((emotionStat) => {
-                        const pct = stats.totalEntries > 0
-                            ? Math.round((emotionStat.count / stats.totalEntries) * 100)
-                            : 0;
-                        const color = getEmotionColor(emotionStat.label);
-
-                        return (
-                            <View key={emotionStat.emotionId} style={styles.barRow}>
-                                <Text style={styles.barEmoji}>{getEmotionEmoji(emotionStat.label)}</Text>
-                                <Text style={styles.barLabel}>{emotionStat.label}</Text>
-                                <View style={styles.barTrack}>
-                                    <View style={[styles.barFill, { width: `${Math.max(pct, 3)}%`, backgroundColor: color }]} />
-                                </View>
-                                <Text style={styles.barPct}>{pct}%</Text>
+                    {/* ── Émotion la + / la − fréquente ── */}
+                    <Text style={styles.chartTitle}>Fréquence des émotions</Text>
+                    <View style={styles.frequentRow}>
+                        {stats.mostFrequent && (
+                            <View style={[styles.frequentCard]}>
+                                <View style={[styles.colorBar, { backgroundColor: getEmotionColor(stats.mostFrequent.label) }]} />
+                                <Text style={styles.frequentLabel}>La + fréquente</Text>
+                                <Text style={styles.frequentEmoji}>{getEmotionEmoji(stats.mostFrequent.label)}</Text>
+                                <Text style={styles.frequentTitle}>{stats.mostFrequent.label}</Text>
+                                <Text style={styles.frequentDetail}>
+                                    {stats.mostFrequent.count} fois · moy. {stats.mostFrequent.avgIntensity}/10
+                                </Text>
                             </View>
-                        );
-                    })}
-
-                    {/* Évolution par jour (mini aperçu textuel) */}
-                    {stats.evolutionByDay.length > 0 && (
-                        <>
-                            <Text style={[styles.sectionTitle, { marginTop: SPACING.lg }]}>Évolution</Text>
-                            {stats.evolutionByDay.slice(-7).map((day) => (
-                                <View key={day.date} style={styles.evolutionRow}>
-                                    <Text style={styles.evolutionDate}>
-                                        {new Date(day.date).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' })}
-                                    </Text>
-                                    <View style={styles.barTrack}>
-                                        <View
-                                            style={[
-                                                styles.barFill,
-                                                {
-                                                    width: `${Math.max(day.avgIntensity * 10, 3)}%`,
-                                                    backgroundColor: COLORS.primary,
-                                                },
-                                            ]}
-                                        />
-                                    </View>
-                                    <Text style={styles.evolutionValue}>{day.avgIntensity}/10</Text>
-                                </View>
-                            ))}
-                        </>
-                    )}
+                        )}
+                        {stats.leastFrequent && (
+                            <View style={[styles.frequentCard]}>
+                                <View style={[styles.colorBar, { backgroundColor: getEmotionColor(stats.leastFrequent.label) }]} />
+                                <Text style={styles.frequentLabel}>La − fréquente</Text>
+                                <Text style={styles.frequentEmoji}>{getEmotionEmoji(stats.leastFrequent.label)}</Text>
+                                <Text style={styles.frequentTitle}>{stats.leastFrequent.label}</Text>
+                                <Text style={styles.frequentDetail}>
+                                    {stats.leastFrequent.count} fois · moy. {stats.leastFrequent.avgIntensity}/10
+                                </Text>
+                            </View>
+                        )}
+                    </View>
                 </>
             )}
             <View style={{ height: 30 }} />
@@ -390,7 +639,7 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: COLORS.background,
-        paddingTop: 60,
+        paddingTop: 10,
         paddingHorizontal: SPACING.md,
     },
     centered: {
@@ -431,7 +680,7 @@ const styles = StyleSheet.create({
     fab: {
         position: 'absolute',
         bottom: 28,
-        alignSelf: 'center',
+        right: 28,
         width: 60, height: 60,
         borderRadius: 30,
         backgroundColor: COLORS.primary,
@@ -439,7 +688,10 @@ const styles = StyleSheet.create({
         shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.25, shadowRadius: 6, elevation: 8,
     },
-    fabText: { fontSize: 26, color: '#fff' },
+    fabText: {
+        fontSize: 26,
+        color: '#fff'
+    },
     fabLabel: {
         position: 'absolute',
         bottom: 10,
@@ -468,28 +720,116 @@ const styles = StyleSheet.create({
     segmentText: { fontSize: 14, fontWeight: '600', color: COLORS.textLight },
     segmentTextActive: { color: COLORS.primary },
 
-    // ─── Journal ───
-    entryCard: {
+    // ─── Journal : filtres + sections ───
+    filterRow: {
+        flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.sm,
+    },
+    dateSearchBtn: {
+        flex: 1,
+        backgroundColor: COLORS.border,
+        paddingVertical: 10, paddingHorizontal: SPACING.md,
+        borderRadius: DIMENSIONS.borderRadius.lg,
+    },
+    dateSearchBtnActive: {
+        backgroundColor: '#E8F5E9',
+        borderWidth: 1, borderColor: COLORS.accent,
+    },
+    dateSearchText: { fontSize: 14, color: COLORS.textLight },
+    dateSearchTextActive: { color: COLORS.accent, fontWeight: '600' },
+
+
+    chipsRow: { flexShrink: 0 },
+    chipsContent: { paddingRight: SPACING.md },
+    chip: {
+        height: 34,
+        paddingHorizontal: 16,
+        borderRadius: DIMENSIONS.borderRadius.full,
+        backgroundColor: '#CCF0E8',
+        marginRight: SPACING.sm,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    chipActive: {
+        backgroundColor: COLORS.primary,
+    },
+    chipText: { fontSize: 13, fontWeight: '600', color: COLORS.text },
+    chipTextActive: { color: '#fff' },
+
+    sectionHeader: {
+        fontSize: 14, fontWeight: '700', color: COLORS.textLight,
+        textTransform: 'uppercase', letterSpacing: 0.5,
+        marginBottom: SPACING.xs,
+    },
+    sectionHeaderToday: {
+        fontSize: 14, fontWeight: '700', color: COLORS.text,
+        textTransform: 'uppercase', letterSpacing: 0.5,
+        marginBottom: SPACING.xs,
+    },
+    todaySection: {
+        backgroundColor: '#F1FDFB',
+        borderRadius: DIMENSIONS.borderRadius.lg,
+        padding: SPACING.sm,
+        marginBottom: SPACING.xs,
+    },
+    sectionContainer: {
         backgroundColor: COLORS.background,
         borderRadius: DIMENSIONS.borderRadius.lg,
+        padding: SPACING.sm,
+        marginBottom: SPACING.xs,
+    },
+
+    // ─── Placeholder "Aujourd'hui" (pas d'entrée) ───
+    todayPlaceholder: {
+        backgroundColor: '#F9F5FF',
+        borderRadius: DIMENSIONS.borderRadius.lg,
+        borderWidth: 1, borderColor: COLORS.secondary,
+        borderStyle: 'dashed',
         padding: SPACING.md,
         marginBottom: SPACING.sm,
-        borderLeftWidth: 4,
-        borderLeftColor: COLORS.neutral.gray,
-        shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05, shadowRadius: 3, elevation: 1,
+        flexDirection: 'row', alignItems: 'center',
     },
-    entryHeader: { flexDirection: 'row', alignItems: 'center' },
-    entryEmoji: { fontSize: 28, marginRight: SPACING.sm },
-    entryInfo: { flex: 1 },
-    entryEmotion: { fontSize: 16, fontWeight: '700', color: COLORS.text },
-    entryFeeling: { fontSize: 13, color: COLORS.textLight, marginTop: 2 },
-    entryRight: { alignItems: 'flex-end' },
-    entryIntensity: { fontSize: 16, fontWeight: '700', color: COLORS.text },
-    entryDate: { fontSize: 12, color: COLORS.textLight, marginTop: 2 },
-    entryComment: {
-        fontSize: 13, color: COLORS.textLight, marginTop: SPACING.sm,
-        fontStyle: 'italic',
+    todayPlaceholderEmoji: { fontSize: 28, marginRight: SPACING.sm },
+    todayPlaceholderText: {
+        flex: 1, fontSize: 15, color: COLORS.primary, fontWeight: '600',
+    },
+    pickerActions: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: SPACING.sm,
+        marginTop: SPACING.xs,
+        marginBottom: SPACING.sm,
+    },
+    resetPickerBtn: {
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+        borderRadius: DIMENSIONS.borderRadius.md,
+        borderWidth: 1,
+        borderColor: COLORS.error,
+    },
+    resetPickerText: {
+        color: COLORS.error,
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    validatePickerBtn: {
+        backgroundColor: COLORS.primary,
+        paddingVertical: 10,
+        paddingHorizontal: 28,
+        borderRadius: DIMENSIONS.borderRadius.md,
+    },
+    validatePickerText: {
+        color: '#fff',
+        fontSize: 15,
+        fontWeight: '600',
+    },
+    noResultSection: {
+        alignItems: 'center',
+        paddingVertical: SPACING.lg,
+    },
+    noResultText: {
+        fontSize: 15,
+        color: COLORS.textLight,
     },
 
     // ─── Empty state ───
@@ -518,40 +858,56 @@ const styles = StyleSheet.create({
     statsSummary: {
         fontSize: 14, color: COLORS.textLight, marginBottom: SPACING.md, textAlign: 'center',
     },
-    dominantCard: {
-        backgroundColor: '#F9F5FF',
+    chartCard: {
+        backgroundColor: '#fff',
         borderRadius: DIMENSIONS.borderRadius.lg,
-        padding: SPACING.md,
+        padding: SPACING.sm,
         marginBottom: SPACING.lg,
         alignItems: 'center',
+        shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05, shadowRadius: 3, elevation: 1,
     },
-    dominantLabel: { fontSize: 13, color: COLORS.textLight, marginBottom: SPACING.xs },
-    dominantRow: { flexDirection: 'row', alignItems: 'center' },
-    dominantEmoji: { fontSize: 28, marginRight: SPACING.sm },
-    dominantTitle: { fontSize: 18, fontWeight: '700', color: COLORS.text, marginRight: SPACING.sm },
-    dominantCount: { fontSize: 13, color: COLORS.textLight },
-
-    sectionTitle: {
+    chartTitle: {
         fontSize: 15, fontWeight: '700', color: COLORS.text,
-        marginBottom: SPACING.sm, marginTop: SPACING.xs,
+        marginBottom: SPACING.md, alignSelf: 'flex-start',
     },
-    barRow: {
-        flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.sm,
+    legendContainer: {
+        flexDirection: 'row', flexWrap: 'wrap',
+        justifyContent: 'center', gap: SPACING.xs,
+        marginTop: SPACING.sm,
     },
-    barEmoji: { fontSize: 20, width: 30 },
-    barLabel: { fontSize: 13, color: COLORS.text, width: 70 },
-    barTrack: {
-        flex: 1, height: 12,
-        backgroundColor: COLORS.border, borderRadius: 6,
-        marginHorizontal: SPACING.xs, overflow: 'hidden',
+    legendItem: {
+        flexDirection: 'row', alignItems: 'center', marginRight: SPACING.sm,
     },
-    barFill: { height: '100%', borderRadius: 6 },
-    barPct: { fontSize: 13, color: COLORS.textLight, width: 35, textAlign: 'right' },
-
-    // ─── Évolution ───
-    evolutionRow: {
-        flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.xs,
+    legendDot: {
+        width: 10, height: 10, borderRadius: 5, marginRight: 5,
     },
-    evolutionDate: { fontSize: 12, color: COLORS.textLight, width: 60 },
-    evolutionValue: { fontSize: 12, color: COLORS.textLight, width: 40, textAlign: 'right' },
+    legendText: {
+        fontSize: 12, color: COLORS.textLight,
+    },
+    frequentRow: {
+        flexDirection: 'row',
+        gap: SPACING.sm,
+        marginTop: SPACING.xs,
+    },
+    frequentCard: {
+        flex: 1,
+        backgroundColor: '#fff',
+        borderRadius: DIMENSIONS.borderRadius.lg,
+        padding: SPACING.md,
+        paddingLeft: SPACING.md + 6,
+        alignItems: 'center',
+        overflow: 'hidden',
+    },
+    colorBar: {
+        position: 'absolute',
+        left: 0, top: 0, bottom: 0,
+        width: 5,
+        borderTopLeftRadius: DIMENSIONS.borderRadius.lg,
+        borderBottomLeftRadius: DIMENSIONS.borderRadius.lg,
+    },
+    frequentLabel: { fontSize: 11, color: COLORS.textLight, marginBottom: SPACING.xs, textTransform: 'uppercase', letterSpacing: 0.5 },
+    frequentEmoji: { fontSize: 28, marginBottom: SPACING.xs },
+    frequentTitle: { fontSize: 15, fontWeight: '700', color: COLORS.text, marginBottom: 2 },
+    frequentDetail: { fontSize: 11, color: COLORS.textLight, textAlign: 'center' },
 });

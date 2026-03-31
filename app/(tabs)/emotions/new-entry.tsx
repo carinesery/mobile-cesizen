@@ -18,6 +18,7 @@ import {
     KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useMood } from '@/context/MoodContext';
 import { COLORS, SPACING, DIMENSIONS } from '@/constants/theme';
 
@@ -37,13 +38,17 @@ const getVisual = (title: string) =>
 
 export default function NewEntryScreen() {
     const router = useRouter();
-    const { editId } = useLocalSearchParams<{ editId?: string }>();
+    const { editId, noDefaultDate } = useLocalSearchParams<{ editId?: string; noDefaultDate?: string }>();
     const {
         emotions, entries, isLoading, error,
         fetchEmotions, createEntry, updateEntry, clearError,
     } = useMood();
 
     // ─── État du formulaire ───
+    // Si noDefaultDate='1' (entrée existe déjà aujourd'hui), date = null → l'utilisateur doit choisir
+    // Sinon date = aujourd'hui par défaut
+    const [emotionDate, setEmotionDate] = useState<Date | null>(noDefaultDate === '1' ? null : new Date());
+    const [showDatePicker, setShowDatePicker] = useState(false);
     const [selectedEmotionId, setSelectedEmotionId] = useState<string | null>(null);
     const [intensity, setIntensity] = useState(5);
     const [selectedFeelingId, setSelectedFeelingId] = useState<string | null>(null);
@@ -77,6 +82,7 @@ export default function NewEntryScreen() {
         if (editId) {
             const entry = entries.find(e => e.idMoodEntry === editId);
             if (entry) {
+                setEmotionDate(new Date(entry.emotionDate));
                 setSelectedEmotionId(entry.emotionId);
                 setIntensity(entry.parentEmotionIntensity);
                 setSelectedFeelingId(entry.feelingId || null);
@@ -92,13 +98,22 @@ export default function NewEntryScreen() {
             return;
         }
 
+        if (!emotionDate && !editId) {
+            Alert.alert('Date requise', 'Sélectionnez une date pour cette entrée.');
+            return;
+        }
+
         try {
             setSubmitting(true);
             clearError();
 
+            // On envoie la date au format ISO (YYYY-MM-DD)
+            const dateStr = emotionDate ? emotionDate.toISOString().split('T')[0] : undefined;
+
             if (editId) {
                 await updateEntry(editId, {
                     emotionId: selectedEmotionId,
+                    emotionDate: dateStr,
                     parentEmotionIntensity: intensity,
                     feelingId: selectedFeelingId,
                     comment: comment.trim() || null,
@@ -106,6 +121,7 @@ export default function NewEntryScreen() {
             } else {
                 await createEntry({
                     emotionId: selectedEmotionId,
+                    emotionDate: dateStr,
                     parentEmotionIntensity: intensity,
                     feelingId: selectedFeelingId || undefined,
                     comment: comment.trim() || undefined,
@@ -140,6 +156,46 @@ export default function NewEntryScreen() {
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
             >
+                {/* ─── SECTION 0 : Date ─── */}
+                <Text style={styles.sectionTitle}>📅 Quand ?</Text>
+                <TouchableOpacity
+                    style={[styles.dateButton, !emotionDate && styles.dateButtonEmpty]}
+                    onPress={() => setShowDatePicker(true)}
+                >
+                    <Text style={[styles.dateButtonText, !emotionDate && { color: COLORS.textLight }]}>
+                        {emotionDate
+                            ? emotionDate.toLocaleDateString('fr-FR', {
+                                weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+                            })
+                            : 'Sélectionnez une date'}
+                    </Text>
+                    <Text style={styles.dateButtonIcon}>✎</Text>
+                </TouchableOpacity>
+                {showDatePicker && (
+                    <View style={styles.pickerContainer}>
+                        <DateTimePicker
+                            value={emotionDate || new Date()}
+                            mode="date"
+                            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                            maximumDate={new Date()}
+                            minimumDate={new Date('2026-01-01')}
+                            locale="fr-FR"
+                            onChange={(_event: DateTimePickerEvent, date?: Date) => {
+                                if (Platform.OS !== 'ios') setShowDatePicker(false);
+                                if (date) setEmotionDate(date);
+                            }}
+                        />
+                        {Platform.OS === 'ios' && (
+                            <TouchableOpacity
+                                style={styles.pickerDoneBtn}
+                                onPress={() => setShowDatePicker(false)}
+                            >
+                                <Text style={styles.pickerDoneText}>Valider</Text>
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                )}
+
                 {/* ─── SECTION 1 : Choix de l'émotion ─── */}
                 <Text style={styles.sectionTitle}>Comment je me sens ?</Text>
                 <View style={styles.emotionGrid}>
@@ -301,6 +357,35 @@ const styles = StyleSheet.create({
     sectionHint: {
         fontSize: 13, color: COLORS.textLight, marginBottom: SPACING.sm,
     },
+
+    // ─── Sélecteur de date ───
+    dateButton: {
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+        backgroundColor: COLORS.border,
+        paddingVertical: 12, paddingHorizontal: SPACING.md,
+        borderRadius: DIMENSIONS.borderRadius.lg,
+    },
+    dateButtonEmpty: {
+        borderWidth: 1, borderColor: COLORS.primary, borderStyle: 'dashed',
+        backgroundColor: '#FAFAFA',
+    },
+    dateButtonText: {
+        fontSize: 15, color: COLORS.text, textTransform: 'capitalize', fontWeight: '600',
+    },
+    dateButtonIcon: {
+        fontSize: 18, color: COLORS.primary,
+    },
+    pickerContainer: {
+        backgroundColor: COLORS.background,
+        borderRadius: DIMENSIONS.borderRadius.lg,
+        marginTop: SPACING.sm,
+        overflow: 'hidden',
+    },
+    pickerDoneBtn: {
+        alignItems: 'center', paddingVertical: 10,
+        borderTopWidth: 1, borderTopColor: COLORS.border,
+    },
+    pickerDoneText: { fontSize: 16, fontWeight: '600', color: COLORS.primary },
 
     // ─── Grille émotions 3×2 ───
     emotionGrid: {

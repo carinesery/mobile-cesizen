@@ -6,7 +6,7 @@ import { getAPI } from './api';
 import { LoginRequest, LoginResponse, RegisterRequest, ForgotPasswordRequest, ResetPasswordRequest, User } from '../types/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const api = getAPI();
+const getApi = () => getAPI();
 
 export const authService = {
   /**
@@ -14,7 +14,7 @@ export const authService = {
    */
   async login(credentials: LoginRequest): Promise<LoginResponse> {
     try {
-      const response = await api.post<LoginResponse>('/auth/login-mobile', credentials);
+      const response = await getApi().post<LoginResponse>('/auth/login-mobile', credentials);
 
       // On ne stocke plus les tokens à ce niveau ?????
 
@@ -29,7 +29,7 @@ export const authService = {
 
   async getProfile() {
     try {
-      const response = await api.get('/profile');
+      const response = await getApi().get('/profile');
       return response.data;
 
     } catch (error: any) {
@@ -46,7 +46,7 @@ export const authService = {
   async register(data: RegisterRequest | FormData): Promise<User> {
     try {
 
-      const response = await api.post<User>('/auth/register-mobile', data, {
+      const response = await getApi().post<User>('/auth/register-mobile', data, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -68,7 +68,7 @@ export const authService = {
    */
   async forgotPassword(data: ForgotPasswordRequest): Promise<void> {
     try {
-      await api.post('/auth/forgot-password', data);
+      await getApi().post('/auth/forgot-password', data);
     } catch (error: any) {
       const message = error.response?.data?.message || 'Erreur de connexion';
 
@@ -81,7 +81,7 @@ export const authService = {
    */
   async resetPassword(data: ResetPasswordRequest): Promise<void> {
     try {
-      await api.post('/auth/reset-password', data);
+      await getApi().post('/auth/reset-password', data);
     } catch (error) {
       throw error;
     }
@@ -92,7 +92,7 @@ export const authService = {
    */
   async confirmEmail(token: string): Promise<void> {
     try {
-      await api.get(`/auth/confirm-email?token=${token}`);
+      await getApi().get(`/auth/confirm-email?token=${token}`);
     } catch (error: any) {
       const message = error.response?.data?.message || 'Erreur de connexion';
 
@@ -105,7 +105,7 @@ export const authService = {
    */
   async acceptLegal(termsConsent: boolean, privacyConsent: boolean): Promise<void> {
     try {
-      await api.post('/auth/accept-legal', {
+      await getApi().post('/auth/accept-legal', {
         termsConsent,
         privacyConsent,
       });
@@ -120,7 +120,7 @@ export const authService = {
   async logout(): Promise<void> {
     try {
       const refreshToken = await AsyncStorage.getItem('refreshToken');
-      await api.post('/auth/logout-mobile', { refreshToken });
+      await getApi().post('/auth/logout-mobile', { refreshToken });
     } catch (error:any) {
       const message = error.response?.data?.message || 'Erreur de connexion';
 
@@ -142,7 +142,7 @@ export const authService = {
         throw new Error('No refresh token available');
       }
 
-      const response = await api.post<{ accessToken: string; refreshToken: string }>(
+      const response = await getApi().post<{ accessToken: string; refreshToken: string }>(
         '/auth/refresh-token',
         { refreshToken }
       );

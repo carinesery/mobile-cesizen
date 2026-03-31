@@ -3,12 +3,8 @@ import { COLORS } from '@/constants/theme';
 
 export default function EmotionsLayout() {
     return (
-        <Stack
-            screenOptions={{
-                headerTintColor: COLORS.primary,
-            }}
-        >
-            <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack>
+            <Stack.Screen name="index" options={{ headerShown: true, title: "Tracker d'émotions" }} />
             <Stack.Screen
                 name="new-entry"
                 options={{
