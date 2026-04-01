@@ -1,126 +1,433 @@
 import { useRouter } from "expo-router";
-import { Text, View, TouchableOpacity, ActivityIndicator, StyleSheet, ScrollView } from "react-native";
+import { Text, View, TextInput, TouchableOpacity, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard, Alert, ActivityIndicator } from "react-native";
 import { useAuth } from "@/context/AuthContext";
+import { COLORS, SPACING, DIMENSIONS } from "@/constants/theme";
+import { Ionicons } from "@expo/vector-icons";
+import { LoadingScreen } from "@/components/LoadingScreen";
+import { useState } from "react";
+import PasswordInput from "@/components/PasswordInput";
+import { Footer } from "@/components/Footer";
+import loginUserBodySchema, { registerUserBodySchema } from "@/schemas/authSchema";
+import { authService } from "@/services";
 
 
 export default function AccountScreen() {
     const router = useRouter();
-    const { user, initializing } = useAuth();
+    const { user, initializing, login } = useAuth();
+    const [authTab, setAuthTab] = useState<'login' | 'register'>('login');
 
-    // Chargement initial
+    // Login state
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [loginLoading, setLoginLoading] = useState(false);
+    const [loginError, setLoginError] = useState<string | null>(null);
+
+    // Register state
+    const [regUsername, setRegUsername] = useState("");
+    const [regEmail, setRegEmail] = useState("");
+    const [regPassword, setRegPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
+    const [termsConsent, setTermsConsent] = useState(false);
+    const [privacyConsent, setPrivacyConsent] = useState(false);
+    const [registerLoading, setRegisterLoading] = useState(false);
+    const [registerError, setRegisterError] = useState<string | null>(null);
+
+    const handleLogin = async () => {
+        Keyboard.dismiss();
+        setLoginError(null);
+        const result = loginUserBodySchema.safeParse({ email, password });
+        if (!result.success) {
+            Alert.alert("Erreur de formulaire", result.error.errors.map(e => e.message).join("\n"));
+            return;
+        }
+        try {
+            setLoginLoading(true);
+            await login(email, password);
+        } catch (error: any) {
+            setLoginError(error.message);
+        } finally {
+            setLoginLoading(false);
+        }
+    };
+
+    const handleRegister = async () => {
+        Keyboard.dismiss();
+        setRegisterError(null);
+        const parsed = registerUserBodySchema.safeParse({
+            username: regUsername, email: regEmail, password: regPassword, confirmPassword, termsConsent, privacyConsent
+        });
+        if (!parsed.success) {
+            Alert.alert("Erreur de formulaire", parsed.error.errors.map(e => e.message).join("\n"));
+            return;
+        }
+        const formData = new FormData();
+        formData.append('username', regUsername);
+        formData.append('email', regEmail);
+        formData.append('password', regPassword);
+        formData.append('confirmPassword', confirmPassword);
+        formData.append('termsConsent', String(termsConsent));
+        formData.append('privacyConsent', String(privacyConsent));
+        try {
+            setRegisterLoading(true);
+            await authService.register(formData);
+            Alert.alert("Inscription réussie !", "Vous devez maintenant confirmer votre adresse email");
+            router.push("/(auth)/confirm-email");
+        } catch (err: any) {
+            setRegisterError(err.message || "Erreur lors de l'inscription");
+        } finally {
+            setRegisterLoading(false);
+        }
+    };
+
     if (initializing) {
-        return (
-            <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-                <ActivityIndicator size="large" color="#007AFF" />
-            </View>
-        );
+        return <LoadingScreen />;
     }
 
-    // Pas connecté → afficher un écran invitant à se connecter (PAS de redirect !)
+    // ─── Pas connecté : formulaire login/register inline ───
     if (!user) {
         return (
-            <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 20 }}>
-                <Text style={{ fontSize: 20, fontWeight: "bold", marginBottom: 10 }}>Mon compte</Text>
-                <Text style={{ fontSize: 16, color: "#666", marginBottom: 30, textAlign: "center" }}>
-                    Connectez-vous pour accéder à votre compte
-                </Text>
-                <TouchableOpacity
-                    style={[styles.button, { width: '80%' }]}
-                    onPress={() => router.push("/(auth)/login")}
-                >
-                    <Text style={styles.buttonText}>Se connecter</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={[styles.button, { width: '80%', backgroundColor: '#34C759' }]}
-                    onPress={() => router.push("/(auth)/register")}
-                >
-                    <Text style={styles.buttonText}>Créer un compte</Text>
-                </TouchableOpacity>
+            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+                <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                    <ScrollView style={styles.authScreen} contentContainerStyle={styles.authScrollContent} showsVerticalScrollIndicator={false}>
+                        {/* Header */}
+                        <View style={styles.authHeader}>
+                            <Text style={styles.authTitle}>{authTab === 'login' ? 'Connectez-vous' : 'Inscrivez-vous'}</Text>
+                            <Text style={styles.authSubtitle}>Avec CESIZen, prenez soin de votre{'\n'}santé mentale</Text>
+                        </View>
 
-                <TouchableOpacity
-                    onPress={() => router.push("/(auth)/confirm-email")}
-                    style={{ marginTop: 15 }}
-                >
-                    <Text style={{ color: '#007AFF', fontSize: 14, textDecorationLine: 'underline' }}>
-                        Je viens de créer mon compte, je confirme mon email
-                    </Text>
-                </TouchableOpacity>
-            </View>
+                        {/* Formulaire Login */}
+                        {authTab === 'login' && (
+                            <View style={styles.formContainer}>
+                                {/* Segment control */}
+                                <View style={styles.segmentedControl}>
+                                    <TouchableOpacity
+                                        style={[styles.segment, styles.segmentActiveLogin]}
+                                        onPress={() => setAuthTab('login')}
+                                    >
+                                        <Text style={[styles.segmentText, styles.segmentTextActive]}>Connexion</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={styles.segment}
+                                        onPress={() => setAuthTab('register')}
+                                    >
+                                        <Text style={styles.segmentText}>Inscription</Text>
+                                    </TouchableOpacity>
+                                </View>
+
+                                {loginError && <Text style={styles.errorText}>{loginError}</Text>}
+
+                                <Text style={styles.label}>Email</Text>
+                                <View style={styles.inputContainer}>
+                                    <Ionicons name="mail-outline" size={18} color={COLORS.neutral.gray} />
+                                    <TextInput placeholder="exemple@email.com" value={email} onChangeText={setEmail} style={styles.input} keyboardType="email-address" autoCapitalize="none" placeholderTextColor={COLORS.neutral.gray} />
+                                </View>
+
+                                <Text style={styles.label}>Mot de passe</Text>
+                                <PasswordInput placeholder="Votre mot de passe" value={password} onChangeText={setPassword} />
+
+                                <TouchableOpacity style={[styles.primaryButton, (!email || !password) && styles.buttonDisabled]} onPress={handleLogin} disabled={loginLoading || !email || !password} activeOpacity={0.8}>
+                                    {loginLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryButtonText}>Se connecter</Text>}
+                                </TouchableOpacity>
+
+                                <TouchableOpacity style={styles.linkContainer}>
+                                    <Text style={styles.linkText}>Mot de passe oublié ?</Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity style={styles.linkContainer} onPress={() => router.push("/(auth)/confirm-email")}>
+                                    <Text style={styles.confirmEmailLink}>Confirmer mon adresse email</Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
+
+                        {/* Formulaire Register */}
+                        {authTab === 'register' && (
+                            <View style={styles.formContainerRegister}>
+                                {/* Segment control */}
+                                <View style={styles.segmentedControl}>
+                                    <TouchableOpacity
+                                        style={styles.segment}
+                                        onPress={() => setAuthTab('login')}
+                                    >
+                                        <Text style={styles.segmentText}>Connexion</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={[styles.segment, styles.segmentActiveRegister]}
+                                        onPress={() => setAuthTab('register')}
+                                    >
+                                        <Text style={[styles.segmentText, styles.segmentTextActive]}>Inscription</Text>
+                                    </TouchableOpacity>
+                                </View>
+
+                                {registerError && <Text style={styles.errorText}>{registerError}</Text>}
+
+                                <Text style={styles.label}>Nom d'utilisateur</Text>
+                                <View style={styles.inputContainer}>
+                                    <Ionicons name="person-outline" size={18} color={COLORS.neutral.gray} />
+                                    <TextInput placeholder="Votre nom d'utilisateur" value={regUsername} onChangeText={setRegUsername} style={styles.input} placeholderTextColor={COLORS.neutral.gray} />
+                                </View>
+
+                                <Text style={styles.label}>Email</Text>
+                                <View style={styles.inputContainer}>
+                                    <Ionicons name="mail-outline" size={18} color={COLORS.neutral.gray} />
+                                    <TextInput placeholder="exemple@email.com" value={regEmail} onChangeText={setRegEmail} style={styles.input} keyboardType="email-address" autoCapitalize="none" placeholderTextColor={COLORS.neutral.gray} />
+                                </View>
+
+                                <Text style={styles.label}>Mot de passe</Text>
+                                <PasswordInput placeholder="Votre mot de passe" value={regPassword} onChangeText={setRegPassword} />
+
+                                <Text style={styles.label}>Confirmation du mot de passe</Text>
+                                <PasswordInput placeholder="Confirmez votre mot de passe" value={confirmPassword} onChangeText={setConfirmPassword} />
+
+                                <TouchableOpacity style={styles.checkboxRow} onPress={() => setTermsConsent(!termsConsent)}>
+                                    <Ionicons name={termsConsent ? "checkbox" : "square-outline"} size={20} color={termsConsent ? COLORS.primary : '#fff'} />
+                                    <Text style={styles.checkboxText}>
+                                        J'accepte les{' '}
+                                        <Text style={styles.checkboxLink} onPress={() => router.push('/(tabs)/account/cgu')}>conditions générales d'utilisation</Text>
+                                    </Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity style={styles.checkboxRow} onPress={() => setPrivacyConsent(!privacyConsent)}>
+                                    <Ionicons name={privacyConsent ? "checkbox" : "square-outline"} size={20} color={privacyConsent ? COLORS.primary : '#fff'} />
+                                    <Text style={styles.checkboxText}>
+                                        J'accepte la{' '}
+                                        <Text style={styles.checkboxLink} onPress={() => router.push('/(tabs)/account/privacy')}>politique de confidentialité</Text>
+                                    </Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity style={[styles.accentButton, (!regUsername || !regEmail || !regPassword || !confirmPassword || !termsConsent || !privacyConsent) && styles.buttonDisabled]} onPress={handleRegister} disabled={registerLoading || !regUsername || !regEmail || !regPassword || !confirmPassword || !termsConsent || !privacyConsent} activeOpacity={0.8}>
+                                    {registerLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryButtonText}>S'inscrire</Text>}
+                                </TouchableOpacity>
+                            </View>
+                        )}
+
+                        <Footer marginTop={SPACING.lg} />
+                    </ScrollView>
+                </TouchableWithoutFeedback>
+            </KeyboardAvoidingView>
         );
     }
 
-    // Si connecté --> affiche les blocs profil, CGU, faq 
+    // ─── Connecté : menu ───
+    const menuItems = [
+        { label: 'Consulter mon profil', icon: 'person-outline' as const, route: '/account/profile' },
+        { label: 'Conditions générales', icon: 'document-text-outline' as const, route: '/account/legals' },
+        { label: 'Session', icon: 'log-out-outline' as const, route: '/account/logout' },
+        { label: 'Zone de danger', icon: 'warning-outline' as const, route: '/account/secure', danger: true },
+    ];
+
     return (
-        <ScrollView contentContainerStyle={styles.container}>
-            {/* <Text style={styles.title}>Mon Compte</Text> */}
-
-            {/* Vers profil */}
-            <TouchableOpacity
-                style={styles.button}
-                onPress={() => router.push("/account/profile")}
-            >
-                <Text style={styles.buttonText}>Consulter mon profil</Text>
-            </TouchableOpacity>
-
-            {/* Vers legal */}
-            <TouchableOpacity
-                style={styles.button}
-                onPress={() => router.push("/account/legals")}
-            >
-                <Text style={styles.buttonText}>Conditions générales</Text>
-            </TouchableOpacity>
-            {/* Vers legal */}
-            <TouchableOpacity
-                style={styles.button}
-                onPress={() => router.push("/account/logout")}
-            >
-                <Text style={styles.buttonText}>Session</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-                style={styles.button}
-                onPress={() => router.push("/account/secure")}
-            >
-                <Text style={styles.buttonText}>Zone de danger</Text>
-            </TouchableOpacity>
+        <ScrollView style={styles.screen} contentContainerStyle={styles.scrollContent}>
+            {menuItems.map((item) => (
+                <TouchableOpacity
+                    key={item.route}
+                    style={[styles.menuItem, item.danger && styles.menuItemDanger]}
+                    onPress={() => router.push(item.route as any)}
+                    activeOpacity={0.7}
+                >
+                    <View style={styles.menuItemLeft}>
+                        <Ionicons
+                            name={item.icon}
+                            size={20}
+                            color={item.danger ? COLORS.error : COLORS.text}
+                        />
+                        <Text style={[styles.menuItemText, item.danger && styles.menuItemTextDanger]}>
+                            {item.label}
+                        </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={18} color={COLORS.textLight} />
+                </TouchableOpacity>
+            ))}
         </ScrollView>
     );
 };
 
 const styles = StyleSheet.create({
-    loaderContainer: {
+
+    // ─── Auth inline ───
+    authScreen: {
         flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
+        backgroundColor: '#fff',
     },
-    container: {
+    authScrollContent: {
         flexGrow: 1,
-        padding: 20,
-        backgroundColor: "#f8f8f8",
-        justifyContent: "center",
+        paddingHorizontal: SPACING.md,
+        paddingTop: SPACING.xl,
+        paddingBottom: SPACING.lg,
     },
-    title: {
-        fontSize: 28,
-        fontWeight: "bold",
-        color: "#007AFF",
-        textAlign: "center",
-        marginBottom: 40,
+    authHeader: {
+        alignItems: 'center',
+        marginBottom: SPACING.lg,
     },
-    button: {
-        backgroundColor: "#007AFF",
-        paddingVertical: 15,
-        paddingHorizontal: 20,
-        borderRadius: 10,
-        marginBottom: 20,
-        alignItems: "center",
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 4,
-        elevation: 3, // pour Android
+    authTitle: {
+        fontSize: 24,
+        fontWeight: '700',
+        color: COLORS.text,
+        marginBottom: SPACING.xs,
     },
-    buttonText: {
-        color: "#fff",
+    authSubtitle: {
+        fontSize: 14,
+        color: COLORS.textLight,
+        textAlign: 'center',
+        lineHeight: 20,
+    },
+    segmentedControl: {
+        flexDirection: 'row',
+        backgroundColor: '#E8E8E8',
+        borderRadius: DIMENSIONS.borderRadius.lg,
+        padding: 3,
+        marginBottom: SPACING.sm,
+    },
+    segment: {
+        flex: 1,
+        paddingVertical: 10,
+        borderRadius: DIMENSIONS.borderRadius.md,
+        alignItems: 'center',
+    },
+    segmentActiveLogin: {
+        backgroundColor: COLORS.primary,
+    },
+    segmentActiveRegister: {
+        backgroundColor: '#8E51FF',
+    },
+    segmentText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: COLORS.textLight,
+    },
+    segmentTextActive: {
+        color: '#fff',
+    },
+    formContainer: {
+        backgroundColor: '#F1FDFB',
+        borderRadius: DIMENSIONS.borderRadius.xl,
+        padding: SPACING.lg,
+        gap: SPACING.sm,
+    },
+    formContainerRegister: {
+        backgroundColor: COLORS.backgroundVisible,
+        borderRadius: DIMENSIONS.borderRadius.xl,
+        padding: SPACING.lg,
+        gap: SPACING.sm,
+    },
+    label: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: COLORS.text,
+        marginBottom: 2,
+    },
+    inputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#fff',
+        borderRadius: DIMENSIONS.borderRadius.lg,
+        paddingHorizontal: SPACING.sm + 4,
+        gap: SPACING.sm,
+        marginBottom: SPACING.xs,
+    },
+    input: {
+        flex: 1,
+        paddingVertical: 14,
+        fontSize: 14,
+        color: COLORS.text,
+    },
+    errorText: {
+        color: COLORS.error,
+        fontSize: 13,
+        textAlign: 'center',
+        marginBottom: SPACING.sm,
+    },
+    primaryButton: {
+        backgroundColor: COLORS.primary,
+        paddingVertical: 14,
+        borderRadius: DIMENSIONS.borderRadius.lg,
+        alignItems: 'center',
+        marginTop: SPACING.sm,
+    },
+    accentButton: {
+        backgroundColor: '#8E51FF',
+        paddingVertical: 14,
+        borderRadius: DIMENSIONS.borderRadius.lg,
+        alignItems: 'center',
+        marginTop: SPACING.sm,
+    },
+    buttonDisabled: {
+        opacity: 0.5,
+    },
+    primaryButtonText: {
+        color: '#fff',
         fontSize: 16,
-        fontWeight: "600",
+        fontWeight: '600',
+    },
+    linkContainer: {
+        alignItems: 'center',
+        paddingVertical: SPACING.xs,
+    },
+    linkText: {
+        color: COLORS.text,
+        fontSize: 14,
+        fontWeight: '500',
+    },
+    confirmEmailLink: {
+        color: '#8E51FF',
+        fontSize: 14,
+        fontWeight: '700',
+    },
+    checkboxRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: SPACING.sm,
+        paddingVertical: SPACING.xs,
+    },
+    checkboxText: {
+        flex: 1,
+        fontSize: 12,
+        color: COLORS.textLight,
+        lineHeight: 18,
+    },
+    checkboxLink: {
+        color: '#8E51FF',
+        fontWeight: '600',
+        textDecorationLine: 'underline',
+    },
+
+    // ─── Écran connecté ───
+    screen: {
+        flex: 1,
+        backgroundColor: COLORS.background,
+    },
+    scrollContent: {
+        padding: SPACING.md,
+        paddingTop: SPACING.lg,
+        gap: SPACING.sm,
+    },
+    menuItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: '#fff',
+        padding: SPACING.md,
+        borderRadius: DIMENSIONS.borderRadius.lg,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 3,
+        elevation: 1,
+    },
+    menuItemDanger: {
+        borderWidth: 1,
+        borderColor: COLORS.error,
+    },
+    menuItemLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: SPACING.sm,
+    },
+    menuItemText: {
+        fontSize: 16,
+        fontWeight: '500',
+        color: COLORS.text,
+    },
+    menuItemTextDanger: {
+        color: COLORS.error,
     },
 });

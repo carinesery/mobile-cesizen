@@ -8,7 +8,9 @@ import { PieChart, LineChart } from 'react-native-gifted-charts';
 import { useAuth } from '@/context/AuthContext';
 import { useMood } from '@/context/MoodContext';
 import { useRouter } from 'expo-router';
+import { Image } from 'expo-image';
 import { COLORS, SPACING, DIMENSIONS } from '@/constants/theme';
+import { LoadingScreen } from '@/components/LoadingScreen';
 import { MoodEntry } from '@/types/mood';
 import { StatsData, StatsPeriod } from '@/types/stats';
 import { statsService } from '@/services/statsService';
@@ -102,18 +104,19 @@ export default function EmotionsHub() {
 
     // ─── ÉCRAN CHARGEMENT ───
     if (initializing) {
-        return (
-            <View style={styles.centered}>
-                <ActivityIndicator size="large" color={COLORS.primary} />
-            </View>
-        );
+        return <LoadingScreen />;
     }
 
     // Si pas connecté, écran avec message inspirant 
     if (!user) {
         return (
-            <View style={styles.centered}>
-                <Text style={styles.emoji}>🌊</Text>
+            <View style={styles.centeredGuest}>
+                <Image
+                    source={require('../../../assets/lotus.png')}
+                    style={styles.lotusIcon}
+                    contentFit='contain'
+                />
+                <Text style={styles.guestTitle}>Mes émotions</Text>
                 <Text style={styles.quote}>
                     « Les émotions sont des messagers.{'\n'}Les écouter, c'est le premier pas vers le changement. »
                 </Text>
@@ -640,18 +643,34 @@ const styles = StyleSheet.create({
     },
 
     // ─── Écran inspirant (non connecté) ───
-    emoji: { fontSize: 60, marginBottom: 25 },
+    centeredGuest: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 30,
+        backgroundColor: '#F3E8FF',
+    },
+    lotusIcon: {
+        width: 80,
+        height: 80,
+        marginBottom: SPACING.lg,
+    },
+    guestTitle: {
+        fontSize: 22, fontWeight: '700', color: COLORS.text,
+        marginBottom: SPACING.sm,
+    },
     quote: {
-        fontSize: 18, fontStyle: 'italic', color: '#444',
-        textAlign: 'center', lineHeight: 28, marginBottom: 30, paddingHorizontal: 10,
+        fontSize: 16, fontStyle: 'italic', color: COLORS.textLight,
+        textAlign: 'center', lineHeight: 26, marginBottom: SPACING.lg, paddingHorizontal: 10,
     },
     inspirDescription: {
         fontSize: 15, color: COLORS.textLight,
-        textAlign: 'center', lineHeight: 22, marginBottom: 30,
+        textAlign: 'center', lineHeight: 22, marginBottom: SPACING.lg,
     },
     primaryButton: {
         backgroundColor: COLORS.primary,
-        paddingVertical: 14, paddingHorizontal: 30, borderRadius: DIMENSIONS.borderRadius.lg,
+        paddingVertical: 14, paddingHorizontal: 40, borderRadius: DIMENSIONS.borderRadius.lg,
+        width: '80%', alignItems: 'center',
     },
     primaryButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
 

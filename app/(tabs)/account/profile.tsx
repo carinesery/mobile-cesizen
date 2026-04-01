@@ -1,17 +1,13 @@
-import React from "react";
-import { View, Text, Image, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from "react-native";
+import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
 import { useAuth } from "@/context/AuthContext";
 import { router } from "expo-router/build/exports";
+import { LoadingScreen } from "@/components/LoadingScreen";
 
 export default function ProfileScreen() {
   const { user, initializing } = useAuth();
 
   if (initializing) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-      </View>
-    );
+    return <LoadingScreen />;
   }
 
   if (!user) {

@@ -3,6 +3,11 @@ import { useState, useEffect } from "react";
 import { articleService } from "../../../services/articleService";
 import { Article } from "../../../types/article";
 import { useLocalSearchParams, Stack } from "expo-router";
+import { Chips } from "@/components/Chips";
+import { SPACING, COLORS } from "@/constants";
+import Markdown from "react-native-markdown-display";
+import { Ionicons } from "@expo/vector-icons";
+import { LoadingScreen } from "@/components/LoadingScreen";
 
 export default function ArticleDetail() {
 
@@ -17,12 +22,12 @@ export default function ArticleDetail() {
         try {
             setLoading(true);
             setError(null);
-           
+
             const data = await articleService.getArticleBySlug(slug);
-          
+
             setCurrentArticle(data);
         } catch (error: any) {
-           
+
             const errorMessage = error.response?.data?.message || 'Erreur lors du chargement de l\'article';
             setError(errorMessage);
             throw error;
@@ -36,7 +41,7 @@ export default function ArticleDetail() {
         fetchArticle();
     }, [slug]);
 
-    if (!currentArticle) return <Text>Chargement...</Text>;
+    if (!currentArticle) return <LoadingScreen message="Chargement de l'article..." />;
 
     return (
         <>
@@ -63,9 +68,7 @@ export default function ArticleDetail() {
                     {/* CATEGORIES */}
                     <View style={styles.categoriesContainer}>
                         {currentArticle?.categories?.map((cat) => (
-                            <View key={cat.slug} style={styles.categoryChip}>
-                                <Text style={styles.categoryText}>{cat.title}</Text>
-                            </View>
+                            <Chips key={cat.slug} category={cat.title} />
                         ))}
                     </View>
 
@@ -73,19 +76,26 @@ export default function ArticleDetail() {
                     <Text style={styles.title}>{currentArticle?.title}</Text>
 
                     {/* DATE */}
-                    <Text style={styles.date}>
-                        {new Date(currentArticle?.createdAt || '').toLocaleDateString()}
-                    </Text>
+                    <View style={styles.infosContainer}>
+                        <Text style={styles.date}>
+                            {new Date(currentArticle?.createdAt || '').toLocaleDateString()}
+                        </Text >
+                        <View style={styles.authorContainer}>
+                            <Ionicons name="person-outline" size={16} style={{ paddingHorizontal: SPACING.xs }} color={COLORS.neutral.gray} />
+                            <Text style={styles.infos}>Ministère de la santé</Text>
+                        </View>
+                    </View>
+                    <View style={styles.articleContent}>
+                        {/* SUMMARY */}
+                        {currentArticle?.summary && (
+                            <Text style={styles.summary}>{currentArticle.summary}</Text>
+                        )}
 
-                    {/* SUMMARY */}
-                    {currentArticle?.summary && (
-                        <Text style={styles.summary}>{currentArticle.summary}</Text>
-                    )}
-
-                    {/* CONTENT */}
-                    {currentArticle?.content && (
-                        <Text style={styles.contentText}>{currentArticle.content}</Text>
-                    )}
+                        {/* CONTENT */}
+                        {currentArticle?.content && (
+                            <Markdown style={markdownStyles}>{currentArticle.content}</Markdown>
+                        )}
+                    </View>
                 </View>
             </ScrollView>
         </>
@@ -96,6 +106,7 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: "#fff",
+        color: COLORS.text
     },
     image: {
         width: "100%",
@@ -108,6 +119,7 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         flexWrap: "wrap",
         marginBottom: 10,
+        gap: SPACING.sm
     },
     categoryChip: {
         backgroundColor: "#eee",
@@ -122,14 +134,31 @@ const styles = StyleSheet.create({
         color: "#555",
     },
     title: {
-        fontSize: 22,
+        fontSize: 32,
         fontWeight: "bold",
-        marginBottom: 8,
+        paddingVertical: 15,
+        color: COLORS.primary,
     },
     date: {
         fontSize: 12,
         color: "#888",
-        marginBottom: 16,
+    },
+    infosContainer: {
+        alignItems: 'flex-end',
+        gap: SPACING.xs,
+    },
+    authorContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 2,
+    },
+    infos: {
+        fontSize: 12,
+        fontFamily: 'Inter',
+        color: COLORS.neutral.gray,
+    },
+    articleContent: {
+            marginTop: SPACING.lg,
     },
     summary: {
         fontSize: 16,
@@ -137,9 +166,51 @@ const styles = StyleSheet.create({
         marginBottom: 16,
         color: "#444",
     },
-    contentText: {
+});
+
+const markdownStyles = StyleSheet.create({
+    body: {
         fontSize: 16,
         lineHeight: 24,
         color: "#333",
+    },
+    heading1: {
+        fontSize: 24,
+        fontWeight: "bold",
+        marginTop: 20,
+        marginBottom: 10,
+        color: "#111",
+    },
+    heading2: {
+        fontSize: 20,
+        fontWeight: "bold",
+        marginTop: 16,
+        marginBottom: 8,
+        color: "#222",
+    },
+    heading3: {
+        fontSize: 18,
+        fontWeight: "600",
+        marginTop: 12,
+        marginBottom: 6,
+        color: "#333",
+    },
+    paragraph: {
+        marginBottom: 12,
+    },
+    strong: {
+        fontWeight: "bold",
+    },
+    em: {
+        fontStyle: "italic",
+    },
+    bullet_list: {
+        marginBottom: 12,
+    },
+    ordered_list: {
+        marginBottom: 12,
+    },
+    list_item: {
+        marginBottom: 4,
     },
 });

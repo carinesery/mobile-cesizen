@@ -1,39 +1,37 @@
-/**
- * Couleurs de la charte graphique CESIZen
- * Basées sur la maquette fournie
- */
-
 // Couleurs simples et directement utilisables
 export const COLORS = {
-  primary: '#BE51FF',         // Violet principal
-  secondary: '#C29FE9',       // Violet secondaire
-  accent: '#43C0C3',          // Cyan/Teal
-  text: '#333333',            // Texte sombre
+  primary: '#06909A',         // Violet principal
+  secondary: '#CCF0E8',       // Violet secondaire
+  accent: '#8F86F7',          // Cyan/Teal
+  text: '#364153',            // Texte sombre
   textLight: '#666666',       // Texte léger
+  borderDiscret: '#DBEAFE', 
+  searchInput: '#F1FDFB',  // Bordure discrète
   border: '#EEEEEE',          // Bordures
-  background: '#FFFFFF',      // Fond
+  background: '#FFFFFF', 
+  backgroundVisible: '#E3E3FA',  // Fond
   success: '#43C0C3',         // Succès
   error: '#FF6B6B',           // Erreur
   warning: '#FED95D',         // Attention
   neutral: {
     white: '#FFFFFF',
     black: '#000000',
-    gray: '#999999',
+    gray: '#6A7282',
     darkGray: '#666666',
     borderGray: '#EEEEEE',
   },
   status: {
-    success: '#43C0C3',
+    success: '#41C0C3',
     error: '#FF6B6B',
     warning: '#FED95D',
-    info: '#43C0C3',
+    info: '#E2E7FF',
   },
 };
 
 // Palettes complètes si besoin de couleurs alternatives
 export const PALETTES = {
   primary: {
-    darkBlue: '#364153',
+    darkTeal: '#06909A',
     slateGray: '#6A7282',
     teal: '#06090A',
     purple: '#BE51FF',
@@ -58,10 +56,21 @@ export const PALETTES = {
   },
 };
 
+export const FONTS = {
+  justSansRegular: 'JustSans-Regular',
+  justSansBold: 'JustSans-ExBold',
+};
+
 /**
  * Typographie - fontWeight doit être un nombre ou 'bold'/'normal'
  */
 export const TYPOGRAPHY = {
+  titleApp: {
+    fontSize: 32,
+    fontFamily: 'Just Sans',
+    fontWeight: '800' as any,
+    color: COLORS.primary,
+  },
   title: {
     fontSize: 24,
     fontFamily: 'Nunito Sans',
@@ -70,7 +79,7 @@ export const TYPOGRAPHY = {
   subtitle: {
     fontSize: 18,
     fontFamily: 'Nunito Sans',
-    fontWeight: 600 as any,  // React Native accepte 100-900
+    fontWeight: 600 as any,
   },
   body: {
     fontSize: 16,
