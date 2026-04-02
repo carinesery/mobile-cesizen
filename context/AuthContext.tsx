@@ -25,26 +25,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const checkAuth = async () => {
     try {
-
       const accessToken = await AsyncStorage.getItem("accessToken");
-
       if (!accessToken) {
         await AsyncStorage.multiRemove(["accessToken", "refreshToken"]);
         setUser(null);
         return;
       }
-
-      const response = await authService.getProfile(); // un call pour récupérer le user
-      setUser(response.data);
-      
-      console.log("User récupéré du checkAuth :", response.data);
-
+      try {
+        const response = await authService.getProfile();
+        setUser(response);
+        console.log("User récupéré du checkAuth avec accès :", response);
+      } catch (error: any) {
+        // Si erreur d'auth, tente un refresh
+        if (error.message && error.message.toLowerCase().includes('token')) {
+          try {
+            await authService.refreshToken();
+            // On retente getProfile
+            const response = await authService.getProfile();
+            setUser(response);
+            console.log("User récupéré après refreshToken :", response);
+          } catch (refreshError) {
+            // Echec du refresh, on déconnecte
+            await AsyncStorage.multiRemove(["accessToken", "refreshToken"]);
+            setUser(null);
+            console.log("Echec du refreshToken, user déconnecté.");
+          }
+        } else {
+          // Autre erreur
+          setUser(null);
+        }
+      }
     } catch (error) {
-
       console.log("checkAuth erreur :", error);
-
-      // await AsyncStorage.multiRemove(["accessToken", "refreshToken"]);
-      // setUser(null);
+      setUser(null);
     } finally {
       setInitializing(false); // ✅ Fin du check initial
     }

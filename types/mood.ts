@@ -28,7 +28,8 @@ export interface MoodEntry {
   emotionId: string;
   emotion?: Emotion;             // L'émotion principale (LEVEL_1)
   feelingId?: string;
-  feeling?: Emotion;             // La nuance (LEVEL_2), optionnelle
+  feeling?: Emotion; 
+  iconUrl?: string;            // La nuance (LEVEL_2), optionnelle
 }
 
 export interface CreateMoodEntryRequest {

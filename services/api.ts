@@ -50,9 +50,12 @@ export const initializeAPI = (): AxiosInstance => {
           });
           console.log("Token rafraîchi avec succès :", response.data);
 
-          const { accessToken } = response.data;
+          const { accessToken, refreshToken: newRefreshToken } = response.data;
 
           await AsyncStorage.setItem('accessToken', accessToken);
+          if (newRefreshToken) {
+            await AsyncStorage.setItem('refreshToken', newRefreshToken);
+          }
 
           // Réessayer la requête originale
           originalRequest.headers.Authorization = `Bearer ${accessToken}`;

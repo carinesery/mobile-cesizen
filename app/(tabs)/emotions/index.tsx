@@ -237,6 +237,7 @@ const SECTION_ORDER = ['Aujourd\'hui', 'Cette semaine', 'Ce mois-ci', 'Avant'];
 // ══════════════════════════════════════════════════════════
 
 import { Emotion } from '@/types/mood';
+import { EmotionCard } from '@/components/EmotionCart';
 
 function JournalTab({
     entries, emotions, isLoading
@@ -425,7 +426,9 @@ function JournalTab({
                             <Text style={styles.sectionHeaderToday}>Aujourd'hui</Text>
                             {todayEntries.length > 0 ? (
                                 todayEntries.map(item => (
-                                    <MoodEntryCard key={item.idMoodEntry} entry={item} />
+                                    <View key={item.idMoodEntry} style={{ marginBottom: 12 }}>
+                                        <EmotionCard entry={item} />
+                                    </View>
                                 ))
                             ) : (
                                 <TouchableOpacity
@@ -447,7 +450,9 @@ function JournalTab({
                             <Text style={styles.sectionHeader}>{section.title}</Text>
                             {section.data.length > 0 ? (
                                 section.data.map(item => (
-                                    <MoodEntryCard key={item.idMoodEntry} entry={item} />
+                                    <View key={item.idMoodEntry} style={{ marginBottom: 12 }}>
+                                        <EmotionCard entry={item} />
+                                    </View>
                                 ))
                             ) : searchDate ? (
                                 <View style={styles.noResultSection}>
