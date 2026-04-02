@@ -1,16 +1,39 @@
 
 import { AuthProvider } from '@/context/AuthContext';
 import { MoodProvider } from '@/context/MoodContext';
+import { ArticleProvider } from '@/context/ArticleContext';
 import { Stack } from 'expo-router';
+import { useFonts } from 'expo-font';
+import { Inter_400Regular, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
+import * as SplashScreen from 'expo-splash-screen';
+import { useEffect } from 'react';
+
+SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    'JustSans-Regular': require('../assets/fonts/JustSans-Regular.otf'),
+    'JustSans-ExBold': require('../assets/fonts/JustSans-ExBold.otf'),
+    Inter_400Regular,
+    Inter_600SemiBold,
+    Inter_700Bold,
+  });
+
+  useEffect(() => {
+    if (fontsLoaded) SplashScreen.hideAsync();
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) return null;
+
   return (
     <AuthProvider>
       <MoodProvider>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="(auth)" options={{ headerShown: false, presentation: 'modal' }} />
-        </Stack>
+        <ArticleProvider>
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="(auth)" options={{ headerShown: false, presentation: 'modal' }} />
+          </Stack>
+        </ArticleProvider>
       </MoodProvider>
     </AuthProvider>
   )

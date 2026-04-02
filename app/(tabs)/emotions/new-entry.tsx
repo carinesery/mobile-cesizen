@@ -21,6 +21,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useMood } from '@/context/MoodContext';
 import { COLORS, SPACING, DIMENSIONS } from '@/constants/theme';
+import { LoadingScreen } from '@/components/LoadingScreen';
 
 
 // ─── Couleurs et emojis par émotion ───
@@ -138,11 +139,7 @@ export default function NewEntryScreen() {
     };
 
     if (isLoading && primaryEmotions.length === 0) {
-        return (
-            <View style={styles.centered}>
-                <ActivityIndicator size="large" color={COLORS.primary} />
-            </View>
-        );
+        return <LoadingScreen message="Chargement des émotions..." />;
     }
 
     return (

@@ -28,7 +28,8 @@
           "origin": "http://localhost:8081"
         }
       ],
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      "expo-font"
     ]
   }
 }

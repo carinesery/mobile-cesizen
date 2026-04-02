@@ -1,27 +1,30 @@
 import { useState } from "react";
 import { View, TextInput, TouchableOpacity, StyleSheet } from "react-native";
-import { Ionicons } from "@expo/vector-icons"; // ou autre pack d’icônes
+import { Ionicons } from "@expo/vector-icons";
+import { COLORS, SPACING, DIMENSIONS } from "@/constants/theme";
 
 export default function PasswordInput({ value, onChangeText, placeholder }: any) {
     const [secureText, setSecureText] = useState(true);
 
     return (
         <View style={styles.container}>
+            <Ionicons name="lock-closed-outline" size={18} color={COLORS.neutral.gray} />
             <TextInput
                 style={styles.input}
                 placeholder={placeholder}
                 value={value}
                 onChangeText={onChangeText}
-                secureTextEntry={secureText} // important
+                secureTextEntry={secureText}
+                placeholderTextColor={COLORS.neutral.gray}
             />
             <TouchableOpacity
                 onPress={() => setSecureText(prev => !prev)}
                 style={styles.icon}
             >
                 <Ionicons
-                    name={secureText ? "eye-off" : "eye"}
-                    size={24}
-                    color="gray"
+                    name={secureText ? "eye-off-outline" : "eye-outline"}
+                    size={20}
+                    color={COLORS.neutral.gray}
                 />
             </TouchableOpacity>
         </View>
@@ -32,15 +35,19 @@ const styles = StyleSheet.create({
     container: {
         flexDirection: "row",
         alignItems: "center",
-        borderWidth: 1,
-        borderRadius: 5,
-        marginBottom: 15,
+        backgroundColor: '#F6F6F6',
+        borderRadius: DIMENSIONS.borderRadius.lg,
+        paddingHorizontal: SPACING.sm + 4,
+        gap: SPACING.sm,
+        marginBottom: SPACING.sm,
     },
     input: {
         flex: 1,
-        padding: 10,
+        paddingVertical: 14,
+        fontSize: 14,
+        color: COLORS.text,
     },
     icon: {
-        padding: 10,
+        padding: 4,
     },
 });
