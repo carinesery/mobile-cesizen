@@ -3,7 +3,6 @@ import {
     View,
     Text,
     TextInput,
-    Button,
     Alert,
     StyleSheet,
     ActivityIndicator,
@@ -18,6 +17,8 @@ import * as FileSystem from "expo-file-system";
 import { useAuth } from "@/context/AuthContext";
 import { router } from "expo-router";
 import { profileService } from "@/services";
+import { COLORS, SPACING, DIMENSIONS } from "@/constants/theme";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function UpdateProfileScreen() {
     const { user, refreshUser } = useAuth();
@@ -29,7 +30,6 @@ export default function UpdateProfileScreen() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // Pré-remplir les champs
     useEffect(() => {
         if (user) {
             setUsername(user.username || "");
@@ -37,7 +37,6 @@ export default function UpdateProfileScreen() {
         }
     }, [user]);
 
-    // ==== IMAGE PICKER ====
     const pickImage = async () => {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
@@ -57,13 +56,11 @@ export default function UpdateProfileScreen() {
 
         const asset = result.assets[0];
 
-        // Vérification type
         if (!asset.type?.startsWith("image")) {
             Alert.alert("Erreur", "Seules les images sont acceptées");
             return;
         }
 
-        // Vérification taille
         const fileInfo = await FileSystem.getInfoAsync(asset.uri);
         if (fileInfo.size && fileInfo.size > 5 * 1024 * 1024) {
             Alert.alert("Erreur", "Image trop lourde (max 5MB)");
@@ -73,7 +70,6 @@ export default function UpdateProfileScreen() {
         setImage(asset);
     };
 
-    // ==== SUBMIT ====
     const handleUpdate = async () => {
         try {
             setLoading(true);
@@ -95,7 +91,7 @@ export default function UpdateProfileScreen() {
 
             Alert.alert("Succès", "Profil mis à jour !");
 
-            await refreshUser(); // recharge user context
+            await refreshUser();
             router.back();
 
         } catch (err: any) {
@@ -106,96 +102,192 @@ export default function UpdateProfileScreen() {
         }
     };
 
+    const currentImageUri = image?.uri || user?.profilPictureUrl;
+
     return (
         <KeyboardAvoidingView
             style={{ flex: 1 }}
             behavior={Platform.OS === "ios" ? "padding" : "height"}
         >
-            <ScrollView contentContainerStyle={styles.container}>
-                <Text style={styles.title}>Modifier mon profil</Text>
+            <ScrollView style={styles.screen} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                {error && (
+                    <View style={styles.errorBanner}>
+                        <Ionicons name="alert-circle" size={16} color={COLORS.error} />
+                        <Text style={styles.errorText}>{error}</Text>
+                    </View>
+                )}
 
-                {error && <Text style={styles.errorText}>{error}</Text>}
-
-                {/* IMAGE */}
-                <TouchableOpacity onPress={pickImage} style={styles.imageContainer}>
-                    {image ? (
-                        <Image source={{ uri: image.uri }} style={styles.image} />
-                    ) : user?.profilPictureUrl ? (
-                        <Image source={{ uri: user.profilPictureUrl }} style={styles.image} />
-                    ) : (
-                        <View style={styles.placeholder}>
-                            <Text style={{ color: "#007AFF" }}>Choisir une image</Text>
+                {/* Photo de profil */}
+                <TouchableOpacity onPress={pickImage} style={styles.avatarSection} activeOpacity={0.8}>
+                    <View style={styles.avatarContainer}>
+                        {currentImageUri ? (
+                            <Image source={{ uri: currentImageUri }} style={styles.avatar} />
+                        ) : (
+                            <Ionicons name="person" size={48} color={COLORS.neutral.gray} />
+                        )}
+                        <View style={styles.cameraIcon}>
+                            <Ionicons name="camera" size={16} color="#fff" />
                         </View>
-                    )}
+                    </View>
+                    <Text style={styles.changePhotoText}>Changer la photo</Text>
                 </TouchableOpacity>
 
-                {/* USERNAME */}
-                <TextInput
-                    placeholder="Nom d'utilisateur"
-                    value={username}
-                    onChangeText={setUsername}
-                    style={styles.input}
-                />
+                {/* Formulaire */}
+                <View style={styles.formSection}>
+                    <View style={styles.fieldGroup}>
+                        <Text style={styles.label}>Nom d'utilisateur</Text>
+                        <View style={styles.inputContainer}>
+                            <Ionicons name="person-outline" size={18} color={COLORS.neutral.gray} />
+                            <TextInput
+                                placeholder="Votre nom d'utilisateur"
+                                value={username}
+                                onChangeText={setUsername}
+                                style={styles.input}
+                                placeholderTextColor={COLORS.neutral.gray}
+                            />
+                        </View>
+                    </View>
 
-                {/* EMAIL */}
-                <TextInput
-                    placeholder="Email"
-                    value={email}
-                    onChangeText={setEmail}
-                    style={styles.input}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                />
+                    <View style={styles.fieldGroup}>
+                        <Text style={styles.label}>Adresse email</Text>
+                        <View style={styles.inputContainer}>
+                            <Ionicons name="mail-outline" size={18} color={COLORS.neutral.gray} />
+                            <TextInput
+                                placeholder="exemple@email.com"
+                                value={email}
+                                onChangeText={setEmail}
+                                style={styles.input}
+                                keyboardType="email-address"
+                                autoCapitalize="none"
+                                placeholderTextColor={COLORS.neutral.gray}
+                            />
+                        </View>
+                    </View>
+                </View>
 
-                {loading ? (
-                    <ActivityIndicator size="large" color="#007AFF" />
-                ) : (
-                    <Button title="Mettre à jour" onPress={handleUpdate} />
-                )}
+                {/* Bouton */}
+                <TouchableOpacity
+                    style={[styles.submitButton, loading && styles.buttonDisabled]}
+                    onPress={handleUpdate}
+                    disabled={loading}
+                    activeOpacity={0.8}
+                >
+                    {loading ? (
+                        <ActivityIndicator color="#fff" />
+                    ) : (
+                        <Text style={styles.submitButtonText}>Enregistrer les modifications</Text>
+                    )}
+                </TouchableOpacity>
             </ScrollView>
         </KeyboardAvoidingView>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flexGrow: 1,
-        justifyContent: "center",
-        padding: 20,
+    screen: {
+        flex: 1,
+        backgroundColor: '#F8F9FA',
     },
-    title: {
-        fontSize: 24,
-        marginBottom: 20,
-        textAlign: "center",
+    scrollContent: {
+        padding: SPACING.md,
+        paddingTop: SPACING.lg,
+        paddingBottom: SPACING.xl,
     },
-    input: {
-        borderWidth: 1,
-        borderColor: "#ccc",
-        padding: 10,
-        marginBottom: 15,
-        borderRadius: 5,
+    errorBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FFF0F0',
+        padding: SPACING.sm + 4,
+        borderRadius: DIMENSIONS.borderRadius.lg,
+        gap: SPACING.sm,
+        marginBottom: SPACING.md,
     },
     errorText: {
-        color: "red",
-        marginBottom: 10,
-        textAlign: "center",
+        flex: 1,
+        color: COLORS.error,
+        fontSize: 13,
     },
-    imageContainer: {
-        alignItems: "center",
-        marginBottom: 20,
+    avatarSection: {
+        alignItems: 'center',
+        marginBottom: SPACING.lg,
     },
-    image: {
-        width: 100,
-        height: 100,
-        borderRadius: 50,
+    avatarContainer: {
+        width: 110,
+        height: 110,
+        borderRadius: 55,
+        backgroundColor: '#E3E3FA',
+        justifyContent: 'center',
+        alignItems: 'center',
+        overflow: 'hidden',
+        marginBottom: SPACING.sm,
     },
-    placeholder: {
-        width: 100,
-        height: 100,
-        borderRadius: 50,
-        borderWidth: 1,
-        borderColor: "#ccc",
-        justifyContent: "center",
-        alignItems: "center",
+    avatar: {
+        width: 110,
+        height: 110,
+        borderRadius: 55,
+    },
+    cameraIcon: {
+        position: 'absolute',
+        bottom: 4,
+        right: 4,
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: COLORS.primary,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: '#fff',
+    },
+    changePhotoText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: COLORS.primary,
+    },
+    formSection: {
+        gap: SPACING.md,
+        marginBottom: SPACING.lg,
+    },
+    fieldGroup: {
+        gap: 6,
+    },
+    label: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: COLORS.text,
+        marginLeft: 4,
+    },
+    inputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#fff',
+        borderRadius: DIMENSIONS.borderRadius.lg,
+        paddingHorizontal: SPACING.sm + 4,
+        gap: SPACING.sm,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 3,
+        elevation: 1,
+    },
+    input: {
+        flex: 1,
+        paddingVertical: 14,
+        fontSize: 14,
+        color: COLORS.text,
+    },
+    submitButton: {
+        backgroundColor: COLORS.primary,
+        paddingVertical: 16,
+        borderRadius: DIMENSIONS.borderRadius.full,
+        alignItems: 'center',
+    },
+    buttonDisabled: {
+        opacity: 0.5,
+    },
+    submitButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '600',
     },
 });

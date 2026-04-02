@@ -1,5 +1,5 @@
 import { Text, View, StyleSheet, TouchableOpacity, TextInput, FlatList } from "react-native";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "expo-router";
 import { useArticles } from "@/context/ArticleContext";
 import { Article } from "../../../types/article";
@@ -16,6 +16,7 @@ export default function ArticlesScreen() {
     const articles = useMemo(() => allArticles.filter((article: Article) => article.status === 'PUBLISHED'), [allArticles]);
     const [search, setSearch] = useState('');
     const [selectedCategory, setSelectedCategory] = useState<{ title: string, slug: string } | null>(null);
+    const [ deboucedSearch, setDebouncedSearch ] = useState(search);
 
     const router = useRouter();
 
@@ -32,7 +33,7 @@ export default function ArticlesScreen() {
 
     const filtered = useMemo(() => {
         let data = articles;
-        if (search) {
+        if (deboucedSearch) {
             data = data.filter(article =>
                 article.title.toLowerCase().includes(search.toLowerCase())
             );
@@ -44,6 +45,14 @@ export default function ArticlesScreen() {
         }
         return data;
     }, [articles, search, selectedCategory]);
+
+    // Debounce de la recherche
+    useEffect(() => {
+        const timeout = setTimeout(() => {
+            setDebouncedSearch(search);
+        }, 300);
+        return () => clearTimeout(timeout);
+    }, [search]);
 
 
     if (loading) return <LoadingScreen message="Chargement des articles..." />;

@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { Text, View, TextInput, TouchableOpacity, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard, Alert, ActivityIndicator } from "react-native";
+import { Text, View, TextInput, TouchableOpacity, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard, Alert, ActivityIndicator, Image } from "react-native";
 import { useAuth } from "@/context/AuthContext";
 import { COLORS, SPACING, DIMENSIONS } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
@@ -13,7 +13,7 @@ import { authService } from "@/services";
 
 export default function AccountScreen() {
     const router = useRouter();
-    const { user, initializing, login } = useAuth();
+    const { user, initializing, login, logout } = useAuth();
     const [authTab, setAuthTab] = useState<'login' | 'register'>('login');
 
     // Login state
@@ -209,34 +209,92 @@ export default function AccountScreen() {
 
     // ─── Connecté : menu ───
     const menuItems = [
-        { label: 'Consulter mon profil', icon: 'person-outline' as const, route: '/account/profile' },
-        { label: 'Conditions générales', icon: 'document-text-outline' as const, route: '/account/legals' },
-        { label: 'Session', icon: 'log-out-outline' as const, route: '/account/logout' },
-        { label: 'Zone de danger', icon: 'warning-outline' as const, route: '/account/secure', danger: true },
+        { label: 'Consulter mon profil', subtitle: 'Voir et modifier vos informations', icon: 'person-outline' as const, iconColor: COLORS.primary, route: '/account/profile' },
+        { label: 'Conditions générales', subtitle: "Conditions d'utilisation", icon: 'document-text-outline' as const, iconColor: COLORS.primary, route: '/account/cgu' },
+        { label: 'Politique de confidentialité', subtitle: 'Vos données personnelles', icon: 'shield-checkmark-outline' as const, iconColor: COLORS.primary, route: '/account/privacy' },
+        { label: 'FAQ', subtitle: 'Questions fréquentes', icon: 'help-circle-outline' as const, iconColor: COLORS.primary, route: '/account/faq' },
     ];
+
+    const handleLogout = async () => {
+        Alert.alert(
+            "Déconnexion",
+            "Voulez-vous vraiment vous déconnecter ?",
+            [
+                { text: "Annuler", style: "cancel" },
+                {
+                    text: "Se déconnecter",
+                    style: "destructive",
+                    onPress: async () => {
+                        try {
+                            await logout();
+                            router.replace("/(auth)/login" as any);
+                        } catch (error) {
+                            Alert.alert("Erreur", "Impossible de se déconnecter.");
+                        }
+                    },
+                },
+            ]
+        );
+    };
 
     return (
         <ScrollView style={styles.screen} contentContainerStyle={styles.scrollContent}>
-            {menuItems.map((item) => (
-                <TouchableOpacity
-                    key={item.route}
-                    style={[styles.menuItem, item.danger && styles.menuItemDanger]}
-                    onPress={() => router.push(item.route as any)}
-                    activeOpacity={0.7}
-                >
-                    <View style={styles.menuItemLeft}>
-                        <Ionicons
-                            name={item.icon}
-                            size={20}
-                            color={item.danger ? COLORS.error : COLORS.text}
-                        />
-                        <Text style={[styles.menuItemText, item.danger && styles.menuItemTextDanger]}>
-                            {item.label}
-                        </Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={18} color={COLORS.textLight} />
-                </TouchableOpacity>
-            ))}
+            {/* Header profil */}
+            {/* <View style={styles.profileHeader}>
+                <View style={styles.avatarContainer}>
+                    {user.profilPictureUrl ? (
+                        <Image source={{ uri: user.profilPictureUrl }} style={styles.avatarImage} />
+                    ) : (
+                        <Ionicons name="person" size={40} color={COLORS.neutral.gray} />
+                    )}
+                </View>
+                <Text style={styles.profileName}>Mon profil</Text>
+                <Text style={styles.profileSubtitle}>Avec CESIZen, prenez soin de votre{'\n'}santé mentale</Text>
+            </View> */}
+
+            {/* Menu items */}
+            <View style={styles.menuSection}>
+                {menuItems.map((item) => (
+                    <TouchableOpacity
+                        key={item.route}
+                        style={styles.menuItem}
+                        onPress={() => router.push(item.route as any)}
+                        activeOpacity={0.7}
+                    >
+                        <View style={styles.menuItemLeft}>
+                            <View style={styles.menuIconContainer}>
+                                <Ionicons name={item.icon} size={22} color={item.iconColor} />
+                            </View>
+                            <View>
+                                <Text style={styles.menuItemText}>{item.label}</Text>
+                                <Text style={styles.menuItemSubtitle}>{item.subtitle}</Text>
+                            </View>
+                        </View>
+                        <Ionicons name="chevron-forward" size={18} color={COLORS.neutral.gray} />
+                    </TouchableOpacity>
+                ))}
+            </View>
+
+            {/* À propos */}
+            <View style={styles.aboutCard}>
+                <Text style={styles.aboutTitle}>À propos de CESIZen</Text>
+                <Text style={styles.aboutText}>
+                    CESIZen est une application dédiée à votre santé mentale et votre bien-être. Suivez vos émotions, comprenez vos ressentis et prenez soin de vous au quotidien.
+                </Text>
+                <Text style={styles.aboutVersion}>Version 1.0.0</Text>
+            </View>
+
+            {/* Bouton déconnexion */}
+            <TouchableOpacity
+                style={styles.logoutButton}
+                onPress={handleLogout}
+                activeOpacity={0.7}
+            >
+                <Ionicons name="log-out-outline" size={20} color={COLORS.error} />
+                <Text style={styles.logoutText}>Se déconnecter</Text>
+            </TouchableOpacity>
+
+            <Footer marginTop={SPACING.md} />
         </ScrollView>
     );
 };
@@ -393,11 +451,46 @@ const styles = StyleSheet.create({
     // ─── Écran connecté ───
     screen: {
         flex: 1,
-        backgroundColor: COLORS.background,
+        backgroundColor: '#F8F9FA',
     },
     scrollContent: {
-        padding: SPACING.md,
+        paddingHorizontal: SPACING.md,
         paddingTop: SPACING.lg,
+        paddingBottom: SPACING.xl,
+        gap: SPACING.md,
+    },
+    profileHeader: {
+        alignItems: 'center',
+        paddingVertical: SPACING.lg,
+    },
+    avatarContainer: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        backgroundColor: '#E3E3FA',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: SPACING.sm,
+        overflow: 'hidden',
+    },
+    avatarImage: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+    },
+    profileName: {
+        fontSize: 22,
+        fontWeight: '700',
+        color: COLORS.text,
+        marginBottom: 4,
+    },
+    profileSubtitle: {
+        fontSize: 13,
+        color: COLORS.textLight,
+        textAlign: 'center',
+        lineHeight: 18,
+    },
+    menuSection: {
         gap: SPACING.sm,
     },
     menuItem: {
@@ -413,19 +506,71 @@ const styles = StyleSheet.create({
         shadowRadius: 3,
         elevation: 1,
     },
-    menuItemDanger: {
-        borderWidth: 1,
-        borderColor: COLORS.error,
-    },
     menuItemLeft: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: SPACING.sm,
+        gap: SPACING.sm + 4,
+    },
+    menuIconContainer: {
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        backgroundColor: '#F1FDFB',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     menuItemText: {
-        fontSize: 16,
-        fontWeight: '500',
+        fontSize: 15,
+        fontWeight: '600',
         color: COLORS.text,
+    },
+    menuItemSubtitle: {
+        fontSize: 12,
+        color: COLORS.textLight,
+        marginTop: 1,
+    },
+    aboutCard: {
+        backgroundColor: COLORS.secondary,
+        borderRadius: DIMENSIONS.borderRadius.xl,
+        padding: SPACING.lg,
+        marginTop: SPACING.sm,
+    },
+    aboutTitle: {
+        fontSize: 17,
+        fontWeight: '700',
+        color: COLORS.text,
+        marginBottom: SPACING.sm,
+    },
+    aboutText: {
+        fontSize: 13,
+        color: COLORS.textLight,
+        lineHeight: 20,
+        marginBottom: SPACING.sm,
+    },
+    aboutVersion: {
+        fontSize: 12,
+        color: COLORS.neutral.gray,
+        fontWeight: '500',
+    },
+    logoutButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: SPACING.sm,
+        paddingVertical: 14,
+        borderRadius: DIMENSIONS.borderRadius.lg,
+        borderWidth: 1.5,
+        borderColor: COLORS.error,
+        // backgroundColor: COLORS.danger,
+    },
+    logoutText: {
+        fontSize: 15,
+        fontWeight: '600',
+        color: COLORS.error,
+    },
+    menuItemDanger: {
+        borderWidth: 1,
+        borderColor: COLORS.error,
     },
     menuItemTextDanger: {
         color: COLORS.error,

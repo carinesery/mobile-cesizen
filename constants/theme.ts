@@ -11,7 +11,8 @@ export const COLORS = {
   background: '#FFFFFF', 
   backgroundVisible: '#E3E3FA',  // Fond
   success: '#43C0C3',         // Succès
-  error: '#FF6B6B',           // Erreur
+  error: '#FF6B6B',
+  danger: '#FBB9CC',           // Erreur
   warning: '#FED95D',         // Attention
   neutral: {
     white: '#FFFFFF',
