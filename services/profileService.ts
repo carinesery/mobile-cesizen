@@ -25,17 +25,11 @@ export const profileService = {
    */
   async updateProfile(data: UpdateProfileRequest | FormData): Promise<User> {
     try {
-
-      const response = await api.patch<User>('/profile', data, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-
+      // Ne pas forcer le header Content-Type, laisser axios le gérer
+      const response = await api.patch<User>('/profile', data);
       return response.data;
     } catch (error: any) {
       const message = error.response?.data?.message || 'Erreur de connexion';
-
       throw new Error(message);
     }
   },

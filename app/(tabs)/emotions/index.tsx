@@ -14,7 +14,6 @@ import { LoadingScreen } from '@/components/LoadingScreen';
 import { MoodEntry } from '@/types/mood';
 import { StatsData, StatsPeriod } from '@/types/stats';
 import { statsService } from '@/services/statsService';
-import MoodEntryCard from '@/components/MoodEntry';
 
 // ─── Couleurs par émotion (associées par titre, on pourra affiner) ───
 const EMOTION_COLORS: Record<string, string> = {

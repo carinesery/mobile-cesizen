@@ -20,7 +20,24 @@ export const MoodProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setIsLoading(true);
       setError(null);
       const data = await moodEntryService.getAllMoodEntries();
-      setEntries(data);
+      // Map iconUrl de l'émotion (pas de la moodEntry)
+      const { API_CONFIG } = require('../constants/theme');
+      const baseURL = API_CONFIG.baseURL.replace(/\/$/, '');
+      const mappedEntries = data.map((entry: any) => {
+        let iconUrl = entry?.emotion?.iconUrl;
+        if (iconUrl && iconUrl.startsWith('/uploads/')) {
+          iconUrl = `http://10.176.141.31:3000${iconUrl}`;
+        }
+        return {
+          ...entry,
+          emotion: {
+            ...entry.emotion,
+            iconUrl: iconUrl,
+          },
+        };
+      });
+
+      setEntries(mappedEntries);
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || 'Erreur lors du chargement des entrées';
       setError(errorMessage);
