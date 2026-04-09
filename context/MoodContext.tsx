@@ -22,11 +22,11 @@ export const MoodProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const data = await moodEntryService.getAllMoodEntries();
       // Map iconUrl de l'émotion (pas de la moodEntry)
       const { API_CONFIG } = require('../constants/theme');
-      const baseURL = API_CONFIG.baseURL.replace(/\/$/, '');
+      const baseURL = API_CONFIG.baseURL.replace(/\/api\/?$/, '');
       const mappedEntries = data.map((entry: any) => {
         let iconUrl = entry?.emotion?.iconUrl;
         if (iconUrl && iconUrl.startsWith('/uploads/')) {
-          iconUrl = `http://10.176.141.31:3000${iconUrl}`;
+          iconUrl = `${baseURL}${iconUrl}`;
         }
         return {
           ...entry,

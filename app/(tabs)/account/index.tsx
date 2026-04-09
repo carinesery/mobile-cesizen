@@ -227,7 +227,7 @@ export default function AccountScreen() {
                     onPress: async () => {
                         try {
                             await logout();
-                            router.replace("/(auth)/login" as any);
+                            // router.replace("/(auth)/login" as any);
                         } catch (error) {
                             Alert.alert("Erreur", "Impossible de se déconnecter.");
                         }

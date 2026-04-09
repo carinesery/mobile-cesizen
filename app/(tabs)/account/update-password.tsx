@@ -16,6 +16,7 @@ import { profileService } from "@/services";
 import { router } from "expo-router";
 import { COLORS, SPACING, DIMENSIONS } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
+import { useAuth } from "@/context/AuthContext";
 
 export default function UpdatePasswordScreen() {
     const [currentPassword, setCurrentPassword] = useState("");
@@ -24,6 +25,8 @@ export default function UpdatePasswordScreen() {
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    const { logout } = useAuth();
 
     const handleUpdatePassword = async () => {
         setError(null);
@@ -47,9 +50,9 @@ export default function UpdatePasswordScreen() {
                 currentPassword,
                 newPassword
             });
-
-            Alert.alert("Succès", "Mot de passe mis à jour !");
-            router.back();
+            Alert.alert("Succès", "Mot de passe mis à jour ! Vous allez être déconnecté.");
+            await logout();
+            router.replace("/(auth)/login");
 
         } catch (err: any) {
             setError(err.message || "Erreur lors de la mise à jour");
