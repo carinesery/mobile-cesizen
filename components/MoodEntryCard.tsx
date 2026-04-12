@@ -8,7 +8,7 @@ import { MoodEntry } from '@/types';
 import { useRouter } from 'expo-router/build/exports';
 import { useMood } from '@/context/MoodContext';
 
-interface EmotionCardProps {
+interface MoodEntryCardProps {
     entry: MoodEntry;
 }
 
@@ -27,7 +27,7 @@ interface EmotionCardProps {
 // }
 // { icon, emotion, feeling, intensity, date, handleEdit, handleDelete, comment }: { icon: any, emotion: string, feeling: string, intensity: string, date: string, handleEdit: () => void, handleDelete: () => void, comment: string }
 
-export const EmotionCard = ({entry}: EmotionCardProps) => {
+export const MoodEntryCard = ({entry}: MoodEntryCardProps) => {
 
     const router = useRouter();
     const { deleteEntry } = useMood();

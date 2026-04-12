@@ -1,27 +1,43 @@
-/* 
-    nav tab pour choisir l'écran : stats ou moodEntry
-    J epeux donc construire la navigation entre les deux 
-**/
 import { useState, useEffect } from "react";
 import { COLORS, SPACING } from "@/constants/theme";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, SectionList, ScrollView } from "react-native";
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { useAuth } from "@/context/AuthContext";
 import { useMood } from "@/context/MoodContext";
+import { parseISO, isToday, isThisWeek, isThisMonth } from 'date-fns';
 
+import { MoodEntry } from "@/types";
+import { MoodEntryCard } from "@/components/MoodEntryCard";
+
+type MoodEntryListItem = MoodEntry | { isAddNew: true };
 
 export default function MoodEntryStatsScreen() {
     const { user } = useAuth();
-    const { emotions, entries, fetchEntries, fetchEmotions } = useMood();
+    const { emotions, entries, fetchEntriesByMonth, fetchEmotions, currentMonth, setCurrentMonth } = useMood();
     const [activeTab, setActiveTab] = useState('Journal'); // 'Journal' ou 'Stats'
-    const [currentMonth, setCurrentMonth] = useState(new Date().toISOString().slice(0, 7)); // format 'YYYY-MM'
+    const [calendarVisible, setCalendarVisible] = useState(true);
 
     useEffect(() => {
         if (user) {
-            fetchEntries();
+            fetchEntriesByMonth();
             fetchEmotions();
         }
-    }, [user]);
+    }, [user, currentMonth]);
+
+    const todayEntries: MoodEntry[] = [];
+    const weekEntries: MoodEntry[] = [];
+    const monthEntries: MoodEntry[] = [];
+
+    entries.forEach(entry => {
+        const date = parseISO(entry.emotionDate);
+        if (isToday(date)) {
+            todayEntries.push(entry);
+        } else if (isThisWeek(date, { weekStartsOn: 1 })) {
+            weekEntries.push(entry);
+        } else if (isThisMonth(date)) {
+            monthEntries.push(entry);
+        }
+    });
 
     /**
      * Configuration de la locale pour le calendrier en français
@@ -106,40 +122,90 @@ export default function MoodEntryStatsScreen() {
                 ><Text style={activeTab === 'Stats' ? styles.activeTabText : styles.tabText}>Stats</Text>
                 </TouchableOpacity>
             </View>
-            <View>
+            <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
                 {activeTab === 'Journal' ? (
-                    /* Affichage du journal */
-                    <Calendar
-                        theme={{
-                            calendarBackground: '#fff',
-                            selectedDayBackgroundColor: COLORS.accent, // fond du jour sélectionné
-                            selectedDayTextColor: '#fff', // texte du jour sélectionné
-                            textSectionTitleColor: COLORS.neutral.gray,
-                            // todayBackgroundColor: COLORS.backgroundVisible, // fond du jour actuel
-                            todayTextColor: COLORS.accent, // texte du jour actuel
-                            dayTextColor: '#2d4150',
-                            arrowColor: COLORS.accent,
-                            monthTextColor: COLORS.accent,
-                            indicatorColor: COLORS.accent,
-                        }}
-                        style={styles.calendarContainer}
-                        key={currentMonth}
-                        firstDay={1}
-                        minDate={'2026-01-01'}
-                        maxDate={'2036-01-01'}
-                        onMonthChange={month => setCurrentMonth(month.dateString.slice(0, 7))}
-                        current={today} // Date actuelle au format YYYY-MM-DD
-                        markingType="custom" // markingType="multi-dot"
-                        markedDates={markedDates}
-                        onDayPress={(day) => {
-                            console.log('selected day', day);
-                        }} />
-
+                    <View>
+                        {/* Affichage du journal */}
+                        {calendarVisible && (
+                            <Calendar
+                                theme={{
+                                    calendarBackground: '#fff',
+                                    selectedDayBackgroundColor: COLORS.accent,
+                                    selectedDayTextColor: '#fff',
+                                    textSectionTitleColor: COLORS.neutral.gray,
+                                    todayTextColor: COLORS.accent,
+                                    dayTextColor: '#2d4150',
+                                    arrowColor: COLORS.accent,
+                                    monthTextColor: COLORS.accent,
+                                    indicatorColor: COLORS.accent,
+                                }}
+                                style={styles.calendarContainer}
+                                firstDay={1}
+                                minDate={'2026-01-01'}
+                                maxDate={'2036-01-01'}
+                                onMonthChange={month => setCurrentMonth(month.dateString.slice(0, 7))}
+                                current={today}
+                                markingType="custom"
+                                markedDates={markedDates}
+                                onDayPress={(day) => {
+                                    console.log('selected day', day);
+                                }}
+                            />
+                        )}
+                        <TouchableOpacity
+                            style={{
+                                alignSelf: 'center',
+                                marginVertical: 8,
+                                backgroundColor: COLORS.backgroundVisible,
+                                borderRadius: 8,
+                                paddingHorizontal: 16,
+                                paddingVertical: 8,
+                            }}
+                            onPress={() => setCalendarVisible(v => !v)}
+                        >
+                            <Text style={{ color: COLORS.accent, fontWeight: 'bold' }}>
+                                {calendarVisible ? 'Masquer le calendrier' : 'Afficher le calendrier'}
+                            </Text>
+                        </TouchableOpacity>
+                        <SectionList<MoodEntryListItem>
+                            sections={[
+                                { title: "Aujourd'hui", data: todayEntries.length ? todayEntries : [{ isAddNew: true }] },
+                                { title: "Cette semaine", data: weekEntries },
+                                { title: "Ce mois-ci", data: monthEntries },
+                            ]}
+                            keyExtractor={item => 'isAddNew' in item ? 'add-new' : item.idMoodEntry}
+                            renderItem={({ item }) =>
+                                'isAddNew' in item
+                                    ? (
+                                        <TouchableOpacity
+                                            style={{
+                                                backgroundColor: COLORS.accent,
+                                                borderRadius: 12,
+                                                padding: 16,
+                                                alignItems: 'center',
+                                                marginVertical: 8,
+                                            }}
+                                            onPress={() => {
+                                                // Redirige vers la page d'ajout d'entry
+                                            }}
+                                        >
+                                            <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>
+                                                Trackez votre émotion du jour !
+                                            </Text>
+                                        </TouchableOpacity>
+                                    )
+                                    : <MoodEntryCard entry={item} />
+                            }
+                            renderSectionHeader={({ section }) => (
+                                <Text style={{ fontWeight: 'bold', fontSize: 18 }}>{section.title}</Text>
+                            )}
+                            scrollEnabled={false}
+                        />
+                    </View>
                 ) : (
                     <Text>Contenu des stats</Text>
-                    /* Affichage des stats */
                 )}
-            </View>
+            </ScrollView>
         </View>
 
     )
@@ -186,7 +252,8 @@ const styles = StyleSheet.create({
         borderWidth: 2,
         borderColor: COLORS.backgroundVisible,
         borderRadius: SPACING.md,
-        padding: SPACING.md,
+        paddingHorizontal: SPACING.md,
+        paddingVertical: SPACING.sm,
         marginTop: SPACING.md,
     }
 })
@@ -201,4 +268,4 @@ export const scale = (size) => (width / 375) * size;
 
 Puis :
 padding: scale(16)
-**/
+*/

@@ -14,12 +14,14 @@ export const MoodProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [emotions, setEmotions] = useState<Emotion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentMonth, setCurrentMonth] = useState<string>(new Date().toISOString().slice(0, 7)); // format 'YYYY-MM'
+  // const clearEntries = useCallback(() => setEntries([]), []);
 
-  const fetchEntries = useCallback(async () => {
+  const fetchEntriesByMonth = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
-      const data = await moodEntryService.getAllMoodEntries();
+      const data = await moodEntryService.getAllMoodEntriesByMonth(currentMonth);
       // Map iconUrl de l'émotion (pas de la moodEntry)
       const { API_CONFIG } = require('../constants/theme');
       const baseURL = API_CONFIG.baseURL.replace(/\/api\/?$/, '');
@@ -45,7 +47,7 @@ export const MoodProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [currentMonth]);
 
   const fetchEntryById = useCallback(async (id: string) => {
     try {
@@ -144,7 +146,9 @@ export const MoodProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     emotions,
     isLoading,
     error,
-    fetchEntries,
+    currentMonth,
+    setCurrentMonth,
+    fetchEntriesByMonth,
     fetchEntryById,
     fetchEmotions,
     createEntry,

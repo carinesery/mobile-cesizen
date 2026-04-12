@@ -21,8 +21,8 @@ export const emotionService = {
 };
 
 export const moodEntryService = {
-  async getAllMoodEntries(): Promise<MoodEntry[]> {
-    const response = await getAPI().get('/mood-entries');
+  async getAllMoodEntriesByMonth(month?: string): Promise<MoodEntry[]> {
+    const response = await getAPI().get(`/mood-entries?month=${month ?? ''}`);
     return response.data.data ?? response.data;
   },
 

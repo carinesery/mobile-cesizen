@@ -54,7 +54,9 @@ export interface MoodContextType {
   emotions: Emotion[];
   isLoading: boolean;
   error: string | null;
-  fetchEntries: () => Promise<void>;
+  currentMonth: string;
+  setCurrentMonth: (month: string) => void;
+  fetchEntriesByMonth: () => Promise<void>;
   fetchEntryById: (id: string) => Promise<void>;
   fetchEmotions: () => Promise<void>;
   createEntry: (data: CreateMoodEntryRequest) => Promise<void>;
